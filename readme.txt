@@ -11,7 +11,7 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Complete employee schedule management system: create and display schedule, let employees clock in and out, report expenses.
 
 == Description ==
-The Employee Scheduler does everything you need to keep track of your employees\' schedules!
+The Employee Scheduler does everything you need to keep track of your employees' schedules!
 
 * Create a work schedule for employees
 * Send email notifications to employees when their shifts are created or updated
@@ -20,21 +20,22 @@ The Employee Scheduler does everything you need to keep track of your employees\
 * Employees can report expenses and mileage
 
 Upgrade to [Employee Scheduler Pro](https://wpalchemists.com/downloads/employee-scheduler-pro/) for even more features!
+
 * Bulk create shifts
 * Bulk edit shifts
 * Create payroll reports
 * Easily filter shifts and expenses on several criteria
-* View report comparing employees\' scheduled hours to hours actually worked
+* View report comparing employees' scheduled hours to hours actually worked
 
 == Installation ==
 The Plugin can be installed directly from the main WordPress Plugin page.
 
 1. Go to the Plugins => Add New page.
-2. Enter \'Employee Scheduler\' (without quotes) in the textbox and click the \'Search Plugins\' button.
-3. In the list of relevant Plugins click the \'Install\' link for Plugin Options Starter Kit on the right hand side of the page.
-4. Click the \'Install Now\' button on the popup page.
-5. Click \'Activate Plugin\' to finish installation.
-6. That\'s it!
+2. Enter 'Employee Scheduler' (without quotes) in the textbox and click the 'Search Plugins' button.
+3. In the list of relevant Plugins click the 'Install' link for Plugin Options Starter Kit on the right hand side of the page.
+4. Click the 'Install Now' button on the popup page.
+5. Click 'Activate Plugin' to finish installation.
+6. That's it!
 
 After installation, you can go to Employee Scheduler --> Instructions in your WordPress dashboard to learn how to configure the plugin.
 
