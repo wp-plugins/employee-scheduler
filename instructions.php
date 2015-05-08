@@ -8,7 +8,7 @@ function wpaesm_instructions() { ?>
 		<h2><?php _e('Instructions for using the Employee Scheduler', 'wpaesm'); ?></h2>
 
 		<aside style="width: 24%; float: right; background: #fff; padding: 5px 15px; border: 1px solid;">
-			<?php wpaesm_display_options_sidebar(); ?>
+			<?php do_action( 'wpaesm_options_sidebar' ); ?>
 		</aside>
 
 		<h3><?php _e('Initial Set Up', 'wpaesm'); ?></h3>

@@ -3,7 +3,7 @@ Contributors: gwendydd
 Tags: employee, schedule, clock in, clock out, payroll, work schedule, timesheet
 Donate link: https://wpalchemists.com/donate/
 Requires at least: 3.8
-Tested up to: 4.2.1
+Tested up to: 4.2.2
 Stable tag: trunk
 License: GPL 2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -26,6 +26,7 @@ Upgrade to [Employee Scheduler Pro](https://wpalchemists.com/downloads/employee-
 * Create payroll reports
 * Easily filter shifts and expenses on several criteria
 * View report comparing employees' scheduled hours to hours actually worked
+* personal, priority support
 
 == Installation ==
 The Plugin can be installed directly from the main WordPress Plugin page.
@@ -54,5 +55,10 @@ No - only logged in users with administrator or employee user roles can see the 
 8. Extra work form, for reporting work that is not a part of a scheduled shift
 
 == Changelog ==
+= 1.1 =
+* removed conflict with other plugins that use WP Alchemy for metaboxes
+* removed extraneous files
+* minor fixes to be compatible with Employee Scheduler Pro
+
 = 1.0 = 
 * Initial release

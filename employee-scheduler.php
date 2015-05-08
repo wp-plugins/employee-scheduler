@@ -3,7 +3,7 @@
 Plugin Name: Employee Scheduler
 Plugin URI: http://wpalchemists.com/plugins
 Description: Manage your employees' schedules, let employees view their schedule online, generate timesheets and payroll reports
-Version: 1.0
+Version: 1.1
 Author: Morgan Kay
 Author URI: http://wpalchemists.com
 Text Domain: wpaesm
@@ -63,9 +63,6 @@ require_once( plugin_dir_path( __FILE__ ) . 'options.php' );
 require_once( plugin_dir_path( __FILE__ ) . 'views.php' );
 // Require instructions
 require_once( plugin_dir_path( __FILE__ ) . 'instructions.php' );
-// Require dashboard widgets
-require_once( plugin_dir_path( __FILE__ ) . 'dashboard-widgets.php' );
-
 
 
 // Initialize language so it can be translated
@@ -558,11 +555,14 @@ function wpaesm_save_employee_profile_fields( $user_id ) {
 // CREATE CUSTOM METABOXES
 // ------------------------------------------------------------------------
 
-include_once 'wpalchemy/MetaBox.php';
-include_once 'wpalchemy/MediaAccess.php';
-define( 'MYPLUGINNAME_PATH', plugin_dir_path(__FILE__) );
+if(!class_exists('WPAlchemy_MetaBox')) {
+	include_once 'wpalchemy/MetaBox.php';
+	include_once 'wpalchemy/MediaAccess.php';
+	
+	$wpalchemy_media_access = new WPAlchemy_MediaAccess();
+}
 
-$wpalchemy_media_access = new WPAlchemy_MediaAccess();
+define( 'WPAESM_PATH', plugin_dir_path(__FILE__) );
 
 // Add stylesheets and scripts
 function wpaesm_add_admin_styles_and_scripts($hook)
@@ -596,7 +596,7 @@ $shift_metabox = new WPAlchemy_MetaBox(array
     'id' => 'shift_meta',
     'title' => 'Shift Details',
     'types' => array('shift'),
-    'template' => MYPLUGINNAME_PATH . '/wpalchemy/shiftinfo.php',
+    'template' => WPAESM_PATH . '/wpalchemy/shiftinfo.php',
     'mode' => WPALCHEMY_MODE_EXTRACT,
     'prefix' => '_wpaesm_'
 ));
@@ -607,10 +607,24 @@ $expense_metabox = new WPAlchemy_MetaBox(array
     'id' => 'expense_meta',
     'title' => 'Expense Details',
     'types' => array('expense'),
-    'template' => MYPLUGINNAME_PATH . '/wpalchemy/expenseinfo.php',
+    'template' => WPAESM_PATH . '/wpalchemy/expenseinfo.php',
     'mode' => WPALCHEMY_MODE_EXTRACT,
     'prefix' => '_wpaesm_'
 ));
+
+if( function_exists( 'wpaesp_require_employee_scheduler' ) ) {
+	$shift_publish_metabox = new WPAlchemy_MetaBox(array
+	(
+	    'id' => 'shift_publish_meta',
+	    'title' => 'Related Shifts',
+	    'types' => array('shift'),
+	    'template' => WPAESP_PATH . '/shiftpublish.php',
+	    'mode' => WPALCHEMY_MODE_EXTRACT,
+	    'prefix' => '_wpaesm_',
+	    'context' => 'side',
+	    'priority' => 'high'
+	));
+}
 
 
 // ------------------------------------------------------------------------

@@ -31,12 +31,12 @@ function wpaesm_add_options_page() {
 		'Employee Scheduler', 
 		'Employee Scheduler', 
 		'manage_options', 
-		'/employee-schedule-manager/options.php', 
+		'/employee-scheduler/options.php', 
 		'wpaesm_render_options', 
 		'dashicons-admin-generic', 
 		87.2317 
 	);
-	add_submenu_page( '/employee-schedule-manager/options.php', 'Instructions', 'Instructions', 'manage_options', 'instructions', 'wpaesm_instructions' );
+	add_submenu_page( '/employee-scheduler/options.php', 'Instructions', 'Instructions', 'manage_options', 'instructions', 'wpaesm_instructions' );
 }
 
 // ------------------------------------------------------------------------------
@@ -264,6 +264,7 @@ function wpaesm_display_options_sidebar() { ?>
 		<li>* <?php _e( 'Easily filter shifts and expenses on several criteria', 'wpaesm' ); ?></li>
 		<li>* <?php _e( 'View report comparing employees\' scheduled hours to hours actually worked', 'wpaesm' ); ?></li>
 	</ul>
+	<p><?php _e( 'Pro users will also get personalized, priority support.', 'wpaesm' ); ?></p>
 	<p><a href="https://wpalchemists.com/downloads/employee-scheduler-pro/" target="_blank" class="button button-primary">
 		<?php _e( 'Uprade to Pro', 'wpaesm' ); ?>
 	</a></p>
