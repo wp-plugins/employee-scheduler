@@ -55,6 +55,10 @@ No - only logged in users with administrator or employee user roles can see the 
 8. Extra work form, for reporting work that is not a part of a scheduled shift
 
 == Changelog ==
+= 1.2 =
+* made shift email notifications more reliable
+* improved shift status change notification email
+
 = 1.1 =
 * removed conflict with other plugins that use WP Alchemy for metaboxes
 * removed extraneous files

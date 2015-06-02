@@ -828,16 +828,30 @@ function wpaesm_notify_employee( $post_id ) {
 				'connected_type' => 'shifts_to_jobs',
 				'connected_items' => $post_id,
 			) );
-			if ( $jobs->have_posts() ) :
+			if ( $jobs->have_posts() ) {
 				while ( $jobs->have_posts() ) : $jobs->the_post();
 					$jobname = get_the_title();
 				endwhile;
-			endif;
+			} else {
+				$jobname = '';
+			}
 			wp_reset_postdata();
 			// get the other meta data
-			$date = $meta['date'];
-			$starttime = $meta['starttime'];
-			$endtime =  $meta['endtime'];
+			if( isset( $meta['date'] ) ) {
+				$date = $meta['date'];
+			} else {
+				$date = '';
+			}
+			if( isset( $meta['starttime'] ) ) {
+				$starttime = $meta['starttime'];
+			} else {
+				$starttime = '';
+			}
+			if( isset( $meta['endtime'] ) ) {
+				$endtime = $meta['endtime'];
+			} else {
+				$endtime = '';
+			}
 
 			// send the email
 			if( !isset( $employeeid ) ) {
@@ -871,13 +885,19 @@ function wpaesm_send_notification_email( $employeeid, $jobname, $date, $starttim
 	$subject = $options['notification_subject'];
 
 	$message = __( 'You have been scheduled to work the following shift: ', 'wpaesm' ) . "\n\n";
-	$message .= __( 'Date: ', 'wpaesm' ) . $date . "\n";
-	$message .= __( 'Time: ', 'wpaesm' ) . $starttime . " - " . $endtime . "\n";
-	$message .= __( 'Doing the job: ', 'wpaesm' ) . $jobname . "\n";
-	if( $repeatdays !== '' ) {
+	if( isset( $date ) && '' !== $date ) {
+		$message .= __( 'Date: ', 'wpaesm' ) . $date . "\n";
+	}
+	if( isset( $starttime ) && '' !== $starttime && isset( $endtime ) && '' !== $endtime ) {
+		$message .= __( 'Time: ', 'wpaesm' ) . $starttime . " - " . $endtime . "\n";
+	}
+	if( isset( $jobname ) && '' !== $jobname ) {
+		$message .= __( 'Doing the job: ', 'wpaesm' ) . $jobname . "\n";
+	}
+	if( isset( $repeatdays ) && '' !== $repeatdays ) {
 		$message .= __( 'This shift repeats every ', 'wpaesm' );
 		$message .= implode(', ', $repeatdays);
-		$message .= __( 'until ', 'wpaesm' );
+		$message .= __( ' until ', 'wpaesm' );
 		$message .= $repeatuntil;
 	}
 	$content = wp_strip_all_tags( get_post_field( 'post_content', $postid ) );

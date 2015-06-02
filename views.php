@@ -238,6 +238,13 @@ function wpaesm_change_shift_status( $post, $employee ) {
 	if ( !wp_verify_nonce( $_POST['wpaesm_shift_status_nonce'], "wpaesm_shift_status_nonce")) {
         exit( "Permission error." );
     }
+
+    // get the old status
+    $old_status = '';
+    $old_status_list = wp_get_post_terms( $post->ID, 'shift_status' );
+    foreach( $old_status_list as $status ) {
+    	$old_status = $status->name;
+    }
 	
 	// change the shift status
 	wp_set_post_terms( $post->ID, array( $_POST['status'] ), 'shift_status', 0 );
@@ -249,10 +256,21 @@ function wpaesm_change_shift_status( $post, $employee ) {
 		} else {
 			$to = get_bloginfo('admin_email');
 		}
-		$subject = $employee . " changed the status of their shift on " . $meta['date'];
-		$message = $employee . " changed the status their shift that is scheduled for " . $meta['date'] . " to ";
+		$subject = __( 'Shift Status Change Notification', 'wpaesm' );
+
+		$message = __( 'An employee has changed the status of their shift.  Details: ') . "\n\n";
+		if( isset( $employee ) ) {
+			$message .= __( 'Employee: ', 'wpaesm' ) . $employee . "\n";
+		}
+		if( isset( $old_status ) ) {
+			$message .= __( 'Old Status: ', 'wpaesm' ) . $old_status . "\n";
+		}
 		$newstatus = get_term_by( 'id', $_POST['status'], 'shift_status' );
-		$message .= $newstatus->name;
+		$message .= __( 'New Status: ', 'wpaesm' ) . $newstatus->name . "\n\n";
+		
+		$message .= __( 'View shift: ', 'wpaesm' ) . get_the_permalink( $post->ID ) . "\n";
+		$message .= __( 'Edit shift: ', 'wpaesm' ) . get_edit_post_link( $post ->ID ) . "\n";
+
 		$headers = "From: " . $options['notification_from_name'] . "<" . $options['notification_from_email'] . ">";
 		wp_mail( $to, $subject, $message, $headers );
 	}

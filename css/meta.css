@@ -73,11 +73,6 @@ table#payroll-report td.payment {
 	margin-left: 2em;
 }
 
-.instructions aside li {
-	list-style-type: none;
-	margin-left: .5em;
-}
-
 .instructions h4 {
 	border-bottom: 1px solid #ccc;
 }
@@ -503,5 +498,6 @@ position:relative;
 		display: none;
 	}
 }
+
 
 
