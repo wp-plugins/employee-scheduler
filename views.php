@@ -128,6 +128,7 @@ function wpaesm_single_shift_view( $content ) {
 					}
 					// SCC uses this action to ask if employees took a break
 					do_action( 'wpaesm_add_extra_clockout_fields' );
+					$shiftcontent .= "<p>" . __( 'You clocked in at', 'wpaesm') . "&nbsp;" . $meta['clockin'] . "</p>";
 					$shiftcontent .= "<input name='wpaesm_clockout_nonce' id='wpaesm_clockout_nonce' type='hidden' value='" . wp_create_nonce( 'wpaesm_clockout_nonce' ) . "'>";
 					$shiftcontent .= "<input type='submit' value='" . __('Clock Out', 'wpaesm') . "' id='clock-out'>";
 					$shiftcontent .= "</form>";
@@ -630,7 +631,7 @@ function wpaesm_your_schedule_shortcode() {
 			$i++;
 		}
 
-		$mschedule = "<h3>" . sprintf( __( 'Your Schedule for %s through %s', 'wpaesm' ), date( "F j, Y", strtotime( 'Monday this week', $thisweek) ), date( "F j, Y", strtotime( 'Sunday this week', $thisweek) ) ) . "</h3>";
+		$mschedule = "<h3>" . sprintf( __( 'Your Schedule for %s through %s', 'wpaesm' ), $schedulebegin, $scheduleend ) . "</h3>";
 		do_action( 'wpaesm_begin_your_schedule' );
 		$mschedule .= "<nav class='wpaesm-schedule'><ul><li class='wpaesm-previous'><a href='" . get_the_permalink() . "?week=" . $lastweek . "'>" . __( 'Previous Week', 'wpaesm' ) . "</a></li>";
 		$mschedule .= "<li class='wpaesm-this'><a href='" . get_the_permalink() . "'>" . __( 'This Week', 'wpaesm' ) . "</a></li>";
@@ -799,37 +800,71 @@ function wpaesm_employee_profile_shortcode() {
 		    }
 		}
 
-		// if ( count($error) > 0 ) {
-			$profile .= "<p class='error'>" . implode('<br />', $error) . "</p>"; 
-			$profile .= "<form method='post' id='adduser' action='" . the_permalink(); "'>";
-	        $profile .= "<p class='form-username'>";
-	        $profile .= "<label for='first-name'>" . _e('First Name', 'wpaesm') . "</label>";
-	        $profile .= "<input class='text-input' name='first-name' type='text' id='first-name' value='" . the_author_meta( 'first_name', $current_user->ID ) . "'>";
-	        $profile .= "</p><!-- .form-username -->";
-	        $profile .= "<p class='form-username'>";
-	        $profile .= "<label for='last-name'>" . _e('Last Name', 'wpaesm') . "</label>";
-	        $profile .= "<input class='text-input' name='last-name' type='text' id='last-name' value='" . the_author_meta( 'last_name', $current_user->ID ) . "'>";
-	        $profile .= "</p><!-- .form-username -->";
-	        $profile .= "<p class='form-email'>";
-	        $profile .= "<label for='email'>" . _e('E-mail *', 'wpaesm') . "</label>";
-	        $profile .= "<input class='text-input' name='email' type='text' id='email' value='" . the_author_meta( 'user_email', $current_user->ID ) . "'>";
-	        $profile .= "</p><!-- .form-email -->";
-	        $profile .= "<p class='form-password'>";
-	        $profile .= "<label for='pass1'>" . _e('Password *', 'wpaesm') . "</label>";
-	        $profile .= "<input class='text-input' name='pass1' type='password' id='pass1' />";
-	        $profile .= "</p><!-- .form-password -->";
-	        $profile .= "<p class='form-password'>";
-	        $profile .= "<label for='pass2'>" . _e('Repeat Password *', 'wpaesm') . "</label>";
-	        $profile .= "<input class='text-input' name='pass2' type='password' id='pass2' />";
-	        $profile .= "</p><!-- .form-password -->";
-	        $profile .= "<p class='form-textarea'>";
-	    // }
+		$profile .= "<p class='error'>" . implode('<br />', $error) . "</p>"; 
+		$profile .= '<form method="post" id="adduser" action="' . get_the_permalink() . '">';
+
+
+        // $profile .= "<p class='form-username'>";
+        // $profile .= "<label for='first-name'>" . __('First Name', 'wpaesm') . "</label>";
+        // $profile .= "<input class='text-input' name='first-name' type='text' id='first-name' value='" . get_the_author_meta( 'first_name', $current_user->ID ) . "'>";
+        // $profile .= "</p><!-- .form-username -->";
+        // $profile .= "<p class='form-username'>";
+        // $profile .= "<label for='last-name'>" . __('Last Name', 'wpaesm') . "</label>";
+        // $profile .= "<input class='text-input' name='last-name' type='text' id='last-name' value='" . get_the_author_meta( 'last_name', $current_user->ID ) . "'>";
+        // $profile .= "</p><!-- .form-username -->";
+        // $profile .= "<p class='form-email'>";
+        // $profile .= "<label for='email'>" . __('E-mail *', 'wpaesm') . "</label>";
+        // $profile .= "<input class='text-input' name='email' type='text' id='email' value='" . get_the_author_meta( 'user_email', $current_user->ID ) . "'>";
+        // $profile .= "</p><!-- .form-email -->";
+        // $profile .= "<p class='form-password'>";
+        // $profile .= "<label for='pass1'>" . __('Password *', 'wpaesm') . "</label>";
+        // $profile .= "<input class='text-input' name='pass1' type='password' id='pass1' />";
+        // $profile .= "</p><!-- .form-password -->";
+        // $profile .= "<p class='form-password'>";
+        // $profile .= "<label for='pass2'>" . __('Repeat Password *', 'wpaesm') . "</label>";
+        // $profile .= "<input class='text-input' name='pass2' type='password' id='pass2' />";
+        // $profile .= "</p><!-- .form-password -->";
+        // $profile .= "<p class='form-textarea'>";
+
+        $profile .= '
+	        <table class="form-table">
+				<tr>
+					<th><label for="first-name">'. __('First Name', 'wpaesm') .'</label></th>
+					<td>
+						<input type="text" name="first-name" id="first-name" value="' . get_the_author_meta( 'first_name', $current_user->ID ) . '" class="regular-text" /><br />
+					</td>
+				</tr>
+				<tr>
+					<th><label for="last-name">'. __('Last Name', 'wpaesm') .'</label></th>
+					<td>
+						<input type="text" name="last-name" id="last-name" value="' . get_the_author_meta( 'last_name', $current_user->ID ) . '" class="regular-text" /><br />
+					</td>
+				</tr>
+				<tr>
+					<th><label for="last-name">'. __('E-mail', 'wpaesm') .'</label></th>
+					<td>
+						<input type="text" name="email" id="email" value="' . get_the_author_meta( 'user_email', $current_user->ID ) . '" class="regular-text" /><br />
+					</td>
+				</tr>
+				<tr>
+					<th><label for="pass1">'. __('Password', 'wpaesm') .'</label></th>
+					<td>
+						<input type="password" name="pass1" id="pass1" class="regular-text" /><br />
+					</td>
+				</tr>
+				<tr>
+					<th><label for="pass2">'. __('Repeat Password', 'wpaesm') .'</label></th>
+					<td>
+						<input type="password" name="pass2" id="pass2" class="regular-text" /><br />
+					</td>
+				</tr>
+			</table>';
 
         //action hook for plugin and extra fields
         do_action('edit_user_profile',$current_user); 
         $profile .= "<p class='form-submit'>";
         // $profile .= $referer;
-        $profile .= "<input name='updateuser' type='submit' id='updateuser' class='submit button' value='" . _e('Update', 'wpaesm') . "' />";
+        $profile .= "<input name='updateuser' type='submit' id='updateuser' class='submit button' value='" . __('Update', 'wpaesm') . "' />";
         $profile .=  wp_nonce_field( 'update-user' );
         $profile .= "<input name='action' type='hidden' id='action' value='update-user' />";
         $profile .= "</p><!-- .form-submit -->";

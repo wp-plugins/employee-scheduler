@@ -1,6 +1,6 @@
 === Employee Scheduler ===
 Contributors: gwendydd
-Tags: employee, schedule, clock in, clock out, payroll, work schedule, timesheet
+Tags: employee, schedule, clock in, clock out, payroll, work schedule, timesheet, volunteer schedule
 Donate link: https://wpalchemists.com/donate/
 Requires at least: 3.8
 Tested up to: 4.2.2
@@ -55,6 +55,11 @@ No - only logged in users with administrator or employee user roles can see the 
 8. Extra work form, for reporting work that is not a part of a scheduled shift
 
 == Changelog ==
+= 1.3 =
+* fixed header on "your schedule" shortcode to show the correct dates
+* when clock out button is visible, clock in time is displayed
+* fixed formatting issues on [employee_profile] shortcode
+
 = 1.2 =
 * made shift email notifications more reliable
 * improved shift status change notification email
