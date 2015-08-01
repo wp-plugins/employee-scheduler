@@ -55,6 +55,10 @@ No - only logged in users with administrator or employee user roles can see the 
 8. Extra work form, for reporting work that is not a part of a scheduled shift
 
 == Changelog ==
+= 1.4 =
+* updated datetimepicker js library
+* fixed bugs in [employee_profile] shortcode
+
 = 1.3 =
 * fixed header on "your schedule" shortcode to show the correct dates
 * when clock out button is visible, clock in time is displayed

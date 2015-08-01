@@ -3,7 +3,7 @@
 Plugin Name: Employee Scheduler
 Plugin URI: http://wpalchemists.com/plugins
 Description: Manage your employees' schedules, let employees view their schedule online, generate timesheets and payroll reports
-Version: 1.3
+Version: 1.4
 Author: Morgan Kay
 Author URI: http://wpalchemists.com
 Text Domain: wpaesm
@@ -543,11 +543,21 @@ function wpaesm_save_employee_profile_fields( $user_id ) {
 
 	if ( !current_user_can( 'edit_user', $user_id ) ) { return false; }
 
-	update_user_meta( $user_id, 'address', $_POST['address'] );
-	update_user_meta( $user_id, 'city', $_POST['city'] );
-	update_user_meta( $user_id, 'state', $_POST['state'] );
-	update_user_meta( $user_id, 'zip', $_POST['zip'] );
-	update_user_meta( $user_id, 'phone', $_POST['phone'] );
+	if( isset( $_POST['address'] ) ) {
+		update_user_meta( $user_id, 'address', $_POST['address'] );
+	}
+	if( isset( $_POST['city'] ) ) {
+		update_user_meta( $user_id, 'city', $_POST['city'] );
+	}
+	if( isset( $_POST['state'] ) ) {
+		update_user_meta( $user_id, 'state', $_POST['state'] );
+	}
+	if( isset( $_POST['zip'] ) ) {
+		update_user_meta( $user_id, 'zip', $_POST['zip'] );
+	}
+	if( isset( $_POST['phone'] ) ) {
+		update_user_meta( $user_id, 'phone', $_POST['phone'] );
+	}
 }
 
 
@@ -688,7 +698,7 @@ function wpaesm_p2p_check() {
 	if ( !is_plugin_active( 'posts-to-posts/posts-to-posts.php' ) ) {
 		require_once dirname( __FILE__ ) . '/wpp2p/autoload.php';
 		define( 'P2P_PLUGIN_VERSION', '1.6.3' );
-		define( 'P2P_TEXTDOMAIN', 'cdcrm' );
+		define( 'P2P_TEXTDOMAIN', 'wpaesm' );
 	}
 }
 add_action( 'admin_init', 'wpaesm_p2p_check' );
@@ -810,7 +820,7 @@ function wpaesm_get_latest_priority( $filter ) // figure out what priority the n
 add_action( 'save_post', 'wpaesm_run_that_action_last', 0 ); 
 
 function wpaesm_notify_employee( $post_id ) {
-	if(is_admin()) { // we only need to run this function if we're in the dashboard
+	if( is_admin() && 'trash' !== get_post_status( $post_id ) ) { // we only need to run this function if we're in the dashboard
 		$options = get_option('wpaesm_options'); // get options
 		global $shift_metabox; // get metabox data
 		$meta = $shift_metabox->the_meta( $post_id ); 

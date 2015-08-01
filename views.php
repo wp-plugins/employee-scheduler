@@ -743,21 +743,22 @@ add_shortcode( 'your_schedule', 'wpaesm_your_schedule_shortcode' );
 // EMPLOYEE PROFILE SHORTCODE
 // ------------------------------------------------------------------------
 
+// this output buffer is here so that the redirect will work
+function wpaesm_output_buffer() {
+    ob_start();
+}
+add_action('init', 'wpaesm_output_buffer');
+
+
 function wpaesm_employee_profile_shortcode() {
+
 
 	// Enqueue style to make everything look right
 	wp_enqueue_style( 'employee-scheduler', plugin_dir_url(__FILE__) . 'css/employee-scheduler.css' );
 
-	// must be logged in to view this
-	if( is_user_logged_in() && ( wpaesm_check_user_role('employee') || wpaesm_check_user_role('administrator') ) ) {
-		$profile = '';
-		
 		// thanks to http://wordpress.stackexchange.com/questions/9775/how-to-edit-a-user-profile-on-the-front-end
 		global $current_user, $wp_roles;
-		get_currentuserinfo();
 
-		/* Load the registration file. */
-		require_once( ABSPATH . WPINC . '/registration.php' );
 		$error = array();    
 		/* If profile was saved, update profile. */
 		if ( 'POST' == $_SERVER['REQUEST_METHOD'] && !empty( $_POST['action'] ) && $_POST['action'] == 'update-user' ) {
@@ -786,12 +787,21 @@ function wpaesm_employee_profile_shortcode() {
 		    if ( !empty( $_POST['first-name'] ) )
 		        update_user_meta( $current_user->ID, 'first_name', esc_attr( $_POST['first-name'] ) );
 		    if ( !empty( $_POST['last-name'] ) )
-		        update_user_meta($current_user->ID, 'last_name', esc_attr( $_POST['last-name'] ) );
+		        update_user_meta( $current_user->ID, 'last_name', esc_attr( $_POST['last-name'] ) );
 		    if ( !empty( $_POST['description'] ) )
 		        update_user_meta( $current_user->ID, 'description', esc_attr( $_POST['description'] ) );
+		    if ( !empty( $_POST['address'] ) )
+				update_user_meta( $current_user->ID, 'address', esc_attr( $_POST['address'] ) );
+			if ( !empty( $_POST['city'] ) )
+				update_user_meta( $current_user->ID, 'city', esc_attr( $_POST['city'] ) );
+			if ( !empty( $_POST['state'] ) )
+				update_user_meta( $current_user->ID, 'state', esc_attr( $_POST['state'] ) );
+			if ( !empty( $_POST['zip'] ) )
+				update_user_meta( $current_user->ID, 'zip', esc_attr( $_POST['zip'] ) );
+			if ( !empty( $_POST['phone'] ) )
+				update_user_meta( $current_user->ID, 'phone', esc_attr( $_POST['phone'] ) );
 
-		    /* Redirect so the page will show updated info.*/
-		  /*I am not Author of this Code- i dont know why but it worked for me after changing below line to if ( count($error) == 0 ){ */
+			/* Redirect so the page will show updated info.*/
 		    if ( count($error) == 0 ) {
 		        //action hook for plugins and extra fields saving
 		        do_action('edit_user_profile_update', $current_user->ID);
@@ -800,85 +810,11 @@ function wpaesm_employee_profile_shortcode() {
 		    }
 		}
 
-		$profile .= "<p class='error'>" . implode('<br />', $error) . "</p>"; 
-		$profile .= '<form method="post" id="adduser" action="' . get_the_permalink() . '">';
+	
 
-
-        // $profile .= "<p class='form-username'>";
-        // $profile .= "<label for='first-name'>" . __('First Name', 'wpaesm') . "</label>";
-        // $profile .= "<input class='text-input' name='first-name' type='text' id='first-name' value='" . get_the_author_meta( 'first_name', $current_user->ID ) . "'>";
-        // $profile .= "</p><!-- .form-username -->";
-        // $profile .= "<p class='form-username'>";
-        // $profile .= "<label for='last-name'>" . __('Last Name', 'wpaesm') . "</label>";
-        // $profile .= "<input class='text-input' name='last-name' type='text' id='last-name' value='" . get_the_author_meta( 'last_name', $current_user->ID ) . "'>";
-        // $profile .= "</p><!-- .form-username -->";
-        // $profile .= "<p class='form-email'>";
-        // $profile .= "<label for='email'>" . __('E-mail *', 'wpaesm') . "</label>";
-        // $profile .= "<input class='text-input' name='email' type='text' id='email' value='" . get_the_author_meta( 'user_email', $current_user->ID ) . "'>";
-        // $profile .= "</p><!-- .form-email -->";
-        // $profile .= "<p class='form-password'>";
-        // $profile .= "<label for='pass1'>" . __('Password *', 'wpaesm') . "</label>";
-        // $profile .= "<input class='text-input' name='pass1' type='password' id='pass1' />";
-        // $profile .= "</p><!-- .form-password -->";
-        // $profile .= "<p class='form-password'>";
-        // $profile .= "<label for='pass2'>" . __('Repeat Password *', 'wpaesm') . "</label>";
-        // $profile .= "<input class='text-input' name='pass2' type='password' id='pass2' />";
-        // $profile .= "</p><!-- .form-password -->";
-        // $profile .= "<p class='form-textarea'>";
-
-        $profile .= '
-	        <table class="form-table">
-				<tr>
-					<th><label for="first-name">'. __('First Name', 'wpaesm') .'</label></th>
-					<td>
-						<input type="text" name="first-name" id="first-name" value="' . get_the_author_meta( 'first_name', $current_user->ID ) . '" class="regular-text" /><br />
-					</td>
-				</tr>
-				<tr>
-					<th><label for="last-name">'. __('Last Name', 'wpaesm') .'</label></th>
-					<td>
-						<input type="text" name="last-name" id="last-name" value="' . get_the_author_meta( 'last_name', $current_user->ID ) . '" class="regular-text" /><br />
-					</td>
-				</tr>
-				<tr>
-					<th><label for="last-name">'. __('E-mail', 'wpaesm') .'</label></th>
-					<td>
-						<input type="text" name="email" id="email" value="' . get_the_author_meta( 'user_email', $current_user->ID ) . '" class="regular-text" /><br />
-					</td>
-				</tr>
-				<tr>
-					<th><label for="pass1">'. __('Password', 'wpaesm') .'</label></th>
-					<td>
-						<input type="password" name="pass1" id="pass1" class="regular-text" /><br />
-					</td>
-				</tr>
-				<tr>
-					<th><label for="pass2">'. __('Repeat Password', 'wpaesm') .'</label></th>
-					<td>
-						<input type="password" name="pass2" id="pass2" class="regular-text" /><br />
-					</td>
-				</tr>
-			</table>';
-
-        //action hook for plugin and extra fields
-        do_action('edit_user_profile',$current_user); 
-        $profile .= "<p class='form-submit'>";
-        // $profile .= $referer;
-        $profile .= "<input name='updateuser' type='submit' id='updateuser' class='submit button' value='" . __('Update', 'wpaesm') . "' />";
-        $profile .=  wp_nonce_field( 'update-user' );
-        $profile .= "<input name='action' type='hidden' id='action' value='update-user' />";
-        $profile .= "</p><!-- .form-submit -->";
-        $profile .= "</form><!-- #adduser -->";
-        
-        // endif; 
-
-	} else {
-		$profile = "<p>" . __( 'You must be logged in to view this page.', 'wpaesm' ) . "</p>";
-		$args = array(
-	        'echo' => false,
-		); 
-		$profile .= wp_login_form($args);
-	}
+	ob_start();
+    include 'profile-form.php';
+    return ob_get_clean();
 
 	return $profile;
 }
