@@ -1,4 +1,5 @@
 window.onload = getLocationConstant;
+console.log('loaded');
 
 function getLocationConstant()
 {
@@ -18,4 +19,8 @@ function onGeoSuccess(event)
 
 }
 
-
+function onGeoError(event)
+{
+	document.getElementById("latitude").value =  event.message; 
+    document.getElementById("longitude").value = event.message;
+}

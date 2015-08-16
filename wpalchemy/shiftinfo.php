@@ -109,6 +109,6 @@
 	<?php endwhile; ?>
 	<p style="margin-bottom:15px; padding-top:5px;"><a href="#" class="docopy-employeenote button"><?php _e('Add Another Note', 'wpaesm'); ?></a></p>
 
-
-
 </div>
+
+<div style="display:none;" id="confirm-availability"><?php _e( 'Checking employee\'s availability...', 'wpamesm' ); ?></div>

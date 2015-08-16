@@ -3,7 +3,7 @@
 Plugin Name: Employee Scheduler
 Plugin URI: http://wpalchemists.com/plugins
 Description: Manage your employees' schedules, let employees view their schedule online, generate timesheets and payroll reports
-Version: 1.4
+Version: 1.4.1
 Author: Morgan Kay
 Author URI: http://wpalchemists.com
 Text Domain: wpaesm
