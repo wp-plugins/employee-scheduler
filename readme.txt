@@ -55,6 +55,9 @@ No - only logged in users with administrator or employee user roles can see the 
 8. Extra work form, for reporting work that is not a part of a scheduled shift
 
 == Changelog ==
+- 1.4.2 =
+* fix compatibility issues with other plugins using WPP2P
+
 = 1.4.1 =
 * improved geolocation error reporting
 * minor changes to work with schedule conflict checking in Employee Scheduler Pro

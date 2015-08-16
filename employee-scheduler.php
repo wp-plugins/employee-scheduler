@@ -3,7 +3,7 @@
 Plugin Name: Employee Scheduler
 Plugin URI: http://wpalchemists.com/plugins
 Description: Manage your employees' schedules, let employees view their schedule online, generate timesheets and payroll reports
-Version: 1.4.1
+Version: 1.4.2
 Author: Morgan Kay
 Author URI: http://wpalchemists.com
 Text Domain: wpaesm
@@ -696,27 +696,35 @@ add_action('manage_shift_posts_custom_column', 'wpaesm_shift_overview_columns', 
 
 function wpaesm_p2p_check() {
 	if ( !is_plugin_active( 'posts-to-posts/posts-to-posts.php' ) ) {
-		require_once dirname( __FILE__ ) . '/wpp2p/autoload.php';
-		define( 'P2P_PLUGIN_VERSION', '1.6.3' );
-		define( 'P2P_TEXTDOMAIN', 'wpaesm' );
+		if ( !class_exists( 'P2P_Autoload' ) ) {
+			require_once dirname( __FILE__ ) . '/wpp2p/autoload.php';
+		}
+		if( !defined( 'P2P_PLUGIN_VERSION') ) {
+			define( 'P2P_PLUGIN_VERSION', '1.6.3' );
+		}
+		if( !defined( 'P2P_TEXTDOMAIN') ) {
+			define( 'P2P_TEXTDOMAIN', 'wpaesm' );
+		}
 	}
 }
 add_action( 'admin_init', 'wpaesm_p2p_check' );
 
 function wpaesm_p2p_load() {
-	//load_plugin_textdomain( P2P_TEXTDOMAIN, '', basename( dirname( __FILE__ ) ) . '/languages' );
-	if ( !function_exists( 'p2p_register_connection_type' ) ) {
-		require_once dirname( __FILE__ ) . '/wpp2p/autoload.php';
+	if ( !class_exists( 'P2P_Autoload' ) ) {
+		//load_plugin_textdomain( P2P_TEXTDOMAIN, '', basename( dirname( __FILE__ ) ) . '/languages' );
+		if ( !function_exists( 'p2p_register_connection_type' ) ) {
+			require_once dirname( __FILE__ ) . '/wpp2p/autoload.php';
+		}
+		P2P_Storage::init();
+		P2P_Query_Post::init();
+		P2P_Query_User::init();
+		P2P_URL_Query::init();
+		P2P_Widget::init();
+		P2P_Shortcodes::init();
+		register_uninstall_hook( __FILE__, array( 'P2P_Storage', 'uninstall' ) );
+		if ( is_admin() )
+			wpaesm_load_admin();
 	}
-	P2P_Storage::init();
-	P2P_Query_Post::init();
-	P2P_Query_User::init();
-	P2P_URL_Query::init();
-	P2P_Widget::init();
-	P2P_Shortcodes::init();
-	register_uninstall_hook( __FILE__, array( 'P2P_Storage', 'uninstall' ) );
-	if ( is_admin() )
-		wpaesm_load_admin();
 }
 
 function wpaesm_load_admin() {
