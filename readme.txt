@@ -3,7 +3,7 @@ Contributors: gwendydd
 Tags: employee, schedule, clock in, clock out, payroll, work schedule, timesheet, volunteer schedule
 Donate link: https://wpalchemists.com/donate/
 Requires at least: 3.8
-Tested up to: 4.2.2
+Tested up to: 4.3
 Stable tag: trunk
 License: GPL 2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
