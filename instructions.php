@@ -1,11 +1,29 @@
 <?php
+/**
+ * Instructions
+ *
+ * Display instructions for using the plugin.
+ *
+ * @package WordPress
+ * @subpackage Employee Scheduler
+ * @since 1.0
+ */
 
+if ( ! defined( 'ABSPATH' ) ) exit;
+
+/**
+ * Display instructions.
+ *
+ * Displays the instructions for using the plugin.
+ *
+ * @since 1.0
+ */
 function wpaesm_instructions() { ?>
 	<div class="wrap instructions">
 		
 		<!-- Display Plugin Icon, Header, and Description -->
 		<div class="icon32" id="icon-options-general"><br></div>
-		<h2><?php _e('Instructions for using the Employee Scheduler', 'wpaesm'); ?></h2>
+		<h1><?php _e('Instructions for using the Employee Scheduler', 'wpaesm'); ?></h1>
 
 		<aside style="width: 24%; float: right; background: #fff; padding: 5px 15px; border: 1px solid;">
 			<?php do_action( 'wpaesm_options_sidebar' ); ?>

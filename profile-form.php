@@ -1,4 +1,15 @@
 <?php  
+/**
+ * Profile Form
+ *
+ * HTML template for the form to edit user profile fields
+ *
+ * @package WordPress
+ * @subpackage Employee Scheduler
+ * @since 1.3
+ */
+
+if ( ! defined( 'ABSPATH' ) ) exit;
 if( is_user_logged_in() && ( wpaesm_check_user_role('employee') || wpaesm_check_user_role('administrator') ) ) { ?>
 	<p class='error'><?php implode('<br />', $error); ?></p>
 		<form method="post" id="adduser" action="<?php the_permalink(); ?>">

@@ -1,9 +1,9 @@
 === Employee Scheduler ===
-Contributors: gwendydd
+Contributors: gwendydd, jpkay
 Tags: employee, schedule, clock in, clock out, payroll, work schedule, timesheet, volunteer schedule
 Donate link: https://wpalchemists.com/donate/
 Requires at least: 3.8
-Tested up to: 4.3
+Tested up to: 4.3.1
 Stable tag: trunk
 License: GPL 2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -11,7 +11,7 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Complete employee schedule management system: create and display schedule, let employees clock in and out, report expenses.
 
 == Description ==
-The Employee Scheduler does everything you need to keep track of your employees' schedules!
+The Employee Scheduler does everything you need to keep track of your employees' schedules!  It works just as well for managing volunteer schedules.
 
 * Create a work schedule for employees
 * Send email notifications to employees when their shifts are created or updated
@@ -23,6 +23,8 @@ Upgrade to [Employee Scheduler Pro](https://wpalchemists.com/downloads/employee-
 
 * Bulk create shifts
 * Bulk edit shifts
+* Employees can claim unassigned shifts
+* Employees can drop shifts
 * Create payroll reports
 * Easily filter shifts and expenses on several criteria
 * View report comparing employees' scheduled hours to hours actually worked
@@ -55,7 +57,23 @@ No - only logged in users with administrator or employee user roles can see the 
 8. Extra work form, for reporting work that is not a part of a scheduled shift
 
 == Changelog ==
-- 1.4.2 =
+= 1.6 =
+* error messages will display if clock in and clock out times are not recorded
+* added new admin page to view schedules
+* added location taxonomy to shifts
+* updated code documentation
+
+= 1.5 =
+* when employee fills out "extra work" form, the scheduled time fields are filled in
+* make shifts show up on schedule when no job is assigned
+* make shifts show up on schedule when no employee is assigned
+* add HTML to emails
+* change h2 to h1 on admin screens to conform to new accessibility standards
+* improved options validation
+* added filters to accommodate new features in Employee Scheduler Pro (ability to drop and claim shifts)
+* fixed compatibility problem with wpp2p and WP 4.3
+
+= 1.4.2 =
 * fix compatibility issues with other plugins using WPP2P
 
 = 1.4.1 =

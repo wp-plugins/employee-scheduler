@@ -3,7 +3,7 @@
 Plugin Name: Employee Scheduler
 Plugin URI: http://wpalchemists.com/plugins
 Description: Manage your employees' schedules, let employees view their schedule online, generate timesheets and payroll reports
-Version: 1.4.2
+Version: 1.6
 Author: Morgan Kay
 Author URI: http://wpalchemists.com
 Text Domain: wpaesm
@@ -26,10 +26,15 @@ Text Domain: wpaesm
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-// ------------------------------------------------------------------------
-// REQUIRE MINIMUM VERSION OF WORDPRESS:                                               
-// ------------------------------------------------------------------------
-
+/**
+ * Require minimum version of WordPress.
+ *
+ * Checks if site is running at least 3.8, refuses to activate plugin otherwise.
+ *
+ * @since 1.0
+ *
+ */
+add_action( 'admin_init', 'wpaesm_requires_wordpress_version' );
 
 function wpaesm_requires_wordpress_version() {
 	global $wp_version;
@@ -44,39 +49,91 @@ function wpaesm_requires_wordpress_version() {
 		}
 	}
 }
-add_action( 'admin_init', 'wpaesm_requires_wordpress_version' );
 
-// ------------------------------------------------------------------------
-// REGISTER HOOKS & CALLBACK FUNCTIONS:
-// ------------------------------------------------------------------------
+/**
+ * Add default option values.
+ *
+ * Creates default option values when plugin is activated.  Function defined in options.php.
+ * 
+ * @since 1.0
+ *
+ */
+register_activation_hook( __FILE__, 'wpaesm_add_defaults' );
 
-// Set-up Action and Filter Hooks
-register_activation_hook(__FILE__, 'wpaesm_add_defaults');
-register_uninstall_hook(__FILE__, 'wpaesm_delete_plugin_options');
+/**
+ * Delete options.
+ *
+ * Deletes the plugin options when plugin is deleted.  Function defined in options.php.
+ *
+ * @since 1.0
+ *
+ */
+register_uninstall_hook( __FILE__, 'wpaesm_delete_plugin_options' );
+
+/**
+ * Create options.
+ *
+ * Use Settings API to set up options page.  Function defined in options.php.
+ *
+ * @since 1.0
+ *
+ */
 add_action('admin_init', 'wpaesm_options_init' );
+
+/**
+ * Add pages to menus.
+ *
+ * Add Employee Scheduler options page, instructions page, and schedules page to admin menu.  Function definted in options.php.
+ *
+ * @since 1.0
+ *
+ */
 add_action('admin_menu', 'wpaesm_add_options_page');
 
-
+/**
+ * Require other necessary plugin files.
+ *
+ * @since 1.0
+ *
+ */
 // Require options stuff
 require_once( plugin_dir_path( __FILE__ ) . 'options.php' );
 // Require views
 require_once( plugin_dir_path( __FILE__ ) . 'views.php' );
+// Require dashboard views
+require_once( plugin_dir_path( __FILE__ ) . 'dashboard-views.php' );
+// Require email
+require_once( plugin_dir_path( __FILE__ ) . 'email.php' );
 // Require instructions
 require_once( plugin_dir_path( __FILE__ ) . 'instructions.php' );
 
 
-// Initialize language so it can be translated
+/**
+ * Initialize language.
+ *
+ * Initialize language so plugin can be translated.
+ *
+ * @since 1.0
+ *
+ */
+add_action('init', 'wpaesm_language_init');
+
 function wpaesm_language_init() {
   load_plugin_textdomain( 'wpaesm', false, 'employee-scheduler/languages' );
 }
-add_action('init', 'wpaesm_language_init');
 
 
-// ------------------------------------------------------------------------
-// REGISTER CUSTOM POST TYPES AND TAXONOMIES:
-// ------------------------------------------------------------------------
 
-// Shift Type
+/**
+ * Register custom taxonomy: shift type.
+ *
+ * Register the custom taxonomy "shift type" which is associated with shifts, and create default shift types.
+ *
+ * @since 1.0
+ *
+ */
+add_action( 'init', 'wpaesm_register_tax_shift_type', 0 );
+
 function wpaesm_register_tax_shift_type() {
 
 	$labels = array(
@@ -127,9 +184,17 @@ function wpaesm_register_tax_shift_type() {
 	);
 
 }
-add_action( 'init', 'wpaesm_register_tax_shift_type', 0 );
 
-// Shift Status
+/**
+ * Register custom taxonomy: shift status.
+ *
+ * Register the custom taxonomy "shift status" which is associated with shifts, and create default shift statuses.
+ *
+ * @since 1.0
+ *
+ */
+add_action( 'init', 'wpaesm_register_tax_shift_status', 0 );
+
 function wpaesm_register_tax_shift_status() {
 
 	$labels = array(
@@ -188,10 +253,21 @@ function wpaesm_register_tax_shift_status() {
 	);
 
 }
-add_action( 'init', 'wpaesm_register_tax_shift_status', 0 );
 
-// If no other status has been selected, shift will default to 'assigned'
-// http://wordpress.mfields.org/2010/set-default-terms-for-your-custom-taxonomies-in-wordpress-3-0/
+/**
+ * Default shift status.
+ *
+ * When a shift is saved, if no other shift status has been selected, it will default to "assigned.""
+ *
+ * @since 1.0
+ *
+ * @link http://wordpress.mfields.org/2010/set-default-terms-for-your-custom-taxonomies-in-wordpress-3-0/
+ *
+ * @param int  $post_id ID of the post being saved
+ * @param int  $post ID of post object
+ */
+add_action( 'save_post', 'wpaesm_default_shift_status', 100, 2 );
+
 function wpaesm_default_shift_status( $post_id, $post ) {
     if ( 'publish' === $post->post_status ) {
         $defaults = array(
@@ -206,9 +282,63 @@ function wpaesm_default_shift_status( $post_id, $post ) {
         }
     }
 }
-add_action( 'save_post', 'wpaesm_default_shift_status', 100, 2 );
 
-// Job Category
+/**
+ * Register custom taxonomy: location.
+ *
+ * Register the custom taxonomy "location" which is associated with shift post type.
+ *
+ * @since 1.0
+ *
+ */
+add_action( 'init', 'wpaesm_register_tax_location', 0 );
+
+function wpaesm_register_tax_location() {
+
+	$labels = array(
+		'name'                       => _x( 'Locations', 'Taxonomy General Name', 'wpaesm' ),
+		'singular_name'              => _x( 'Location', 'Taxonomy Singular Name', 'wpaesm' ),
+		'menu_name'                  => __( 'Locations', 'wpaesm' ),
+		'all_items'                  => __( 'All Locations', 'wpaesm' ),
+		'parent_item'                => __( 'Parent Location', 'wpaesm' ),
+		'parent_item_colon'          => __( 'Parent Location:', 'wpaesm' ),
+		'new_item_name'              => __( 'New Item Location', 'wpaesm' ),
+		'add_new_item'               => __( 'Add New Location', 'wpaesm' ),
+		'edit_item'                  => __( 'Edit Location', 'wpaesm' ),
+		'update_item'                => __( 'Update Location', 'wpaesm' ),
+		'view_item'                  => __( 'View Location', 'wpaesm' ),
+		'separate_items_with_commas' => __( 'Separate Locations with commas', 'wpaesm' ),
+		'add_or_remove_items'        => __( 'Add or remove Locations', 'wpaesm' ),
+		'choose_from_most_used'      => __( 'Choose from the most used', 'wpaesm' ),
+		'popular_items'              => __( 'Popular Locations', 'wpaesm' ),
+		'search_items'               => __( 'Search Locations', 'wpaesm' ),
+		'not_found'                  => __( 'Not Found', 'wpaesm' ),
+	);
+	$args = array(
+		'labels'                     => $labels,
+		'hierarchical'               => true,
+		'public'                     => true,
+		'show_ui'                    => true,
+		'show_admin_column'          => true,
+		'show_in_nav_menus'          => false,
+		'show_tagcloud'              => false,
+	);
+	register_taxonomy( 'location', array( 'shift' ), $args );
+
+}
+
+
+
+/**
+ * Register custom taxonomy: job category.
+ *
+ * Register the custom taxonomy "job category" which is associated with job post type.
+ *
+ * @since 1.0
+ *
+ */
+add_action( 'init', 'wpaesm_register_tax_job_category', 0 );
+
 function wpaesm_register_tax_job_category() {
 
     $labels = array(
@@ -240,9 +370,18 @@ function wpaesm_register_tax_job_category() {
     register_taxonomy( 'job_category', array( 'job' ), $args );
 
 }
-add_action( 'init', 'wpaesm_register_tax_job_category', 0 );
 
-// Shift
+
+/**
+ * Register custom post type: shift.
+ *
+ * Register the custom post type, shift, which is the basis for the schedule.
+ *
+ * @since 1.0
+ *
+ */
+add_action( 'init', 'wpaesm_register_cpt_shift', 0 );
+
 function wpaesm_register_cpt_shift() {
 
 	$labels = array(
@@ -283,9 +422,17 @@ function wpaesm_register_cpt_shift() {
 	register_post_type( 'shift', $args );
 
 }
-add_action( 'init', 'wpaesm_register_cpt_shift', 0 );
 
-// Jobs
+/**
+ * Register custom post type: job.
+ *
+ * Register the custom post type for jobs, which will be associated with shifts.
+ *
+ * @since 1.0
+ *
+ */
+add_action( 'init', 'wpaesm_register_cpt_job', 0 );
+
 function wpaesm_register_cpt_job() {
 
     $labels = array(
@@ -326,9 +473,17 @@ function wpaesm_register_cpt_job() {
     register_post_type( 'job', $args );
 
 }
-add_action( 'init', 'wpaesm_register_cpt_job', 0 );
 
-// Register Expense Category
+/**
+ * Register custom taxonomy: expense category.
+ *
+ * Register expense category, which is associated with expense custom post type, and create default categories.
+ *
+ * @since 1.0
+ *
+ */
+add_action( 'init', 'wpaesm_register_tax_expense_category', 0 );
+
 function wpaesm_register_tax_expense_category() {
 
 	$labels = array(
@@ -378,9 +533,17 @@ function wpaesm_register_tax_expense_category() {
 	);
 
 }
-add_action( 'init', 'wpaesm_register_tax_expense_category', 0 );
 
-// Register Expense Status
+/**
+ * Register taxonomy: expense status.
+ *
+ * Register custom taxonomy for expense status, which is associated with expenses, and create default status.
+ *
+ * @since 1.0
+ *
+ */
+add_action( 'init', 'wpaesm_register_tax_expense_status', 0 );
+
 function wpaesm_register_tax_expense_status() {
 
 	$labels = array(
@@ -421,10 +584,18 @@ function wpaesm_register_tax_expense_status() {
 	);
 
 }
-add_action( 'init', 'wpaesm_register_tax_expense_status', 0 );
 
 
-// Expenses
+/**
+ * Register custom post type: expense.
+ *
+ * Register custom post type for expense.
+ *
+ * @since 1.0
+ *
+ */
+add_action( 'init', 'wpaesm_register_cpt_expense', 0 );
+
 function wpaesm_register_cpt_expense() {
 
 	$labels = array(
@@ -465,20 +636,37 @@ function wpaesm_register_cpt_expense() {
 	register_post_type( 'expense', $args );
 
 }
-add_action( 'init', 'wpaesm_register_cpt_expense', 0 );
 
 
-// ------------------------------------------------------------------------
-// CREATE EMPLOYEE USER ROLE
-// ------------------------------------------------------------------------
+/**
+ * Create employee user role.
+ *
+ * Employee user role has same privileges as subscriber, but can also view plugin shortcodes and will be included in employee lists.
+ *
+ * @since 1.0
+ *
+ */
+register_activation_hook( __FILE__, 'wpaesm_create_employee_user_role' );
 
 function wpaesm_create_employee_user_role() {
    add_role( 'employee', 'Employee', array( 'read' => true, 'edit_posts' => false, 'publish_posts' => false ) );
 }
-register_activation_hook( __FILE__, 'wpaesm_create_employee_user_role' );
 
-// create a function to check for the role of the current user
-// thanks to http://docs.appthemes.com/tutorials/wordpress-check-user-role-function/
+
+/**
+ * Get a user's role.
+ *
+ * Check if a user has a particular role.
+ *
+ * @since 1.0
+ *
+ * @link http://docs.appthemes.com/tutorials/wordpress-check-user-role-function/
+ *
+ * @param string  Name of user role.
+ * @param int  ID of user
+ * @return bool True if user has role, false if not.
+ */
+
 function wpaesm_check_user_role( $role, $user_id = null ) {
  
     if ( is_numeric( $user_id ) )
@@ -492,10 +680,14 @@ function wpaesm_check_user_role( $role, $user_id = null ) {
     return in_array( $role, (array) $user->roles );
 }
 
-// ------------------------------------------------------------------------
-// CREATE EMPLOYEE USER FIELDS
-// ------------------------------------------------------------------------
-
+/**
+ * Create additional user profile fields.
+ *
+ * Create user profile fields for employee contact information.
+ *
+ * @since 1.0
+ *
+ */
 add_action( 'show_user_profile', 'wpaesm_employee_profile_fields' );
 add_action( 'edit_user_profile', 'wpaesm_employee_profile_fields' );
 
@@ -536,6 +728,14 @@ function wpaesm_employee_profile_fields( $user ) { ?>
 	</table>
 <?php }
 
+/**
+ * Save additional user profile fields.
+ *
+ * Save user profile fields for employee contact information.
+ *
+ * @since 1.0
+ *
+ */
 add_action( 'personal_options_update', 'wpaesm_save_employee_profile_fields' );
 add_action( 'edit_user_profile_update', 'wpaesm_save_employee_profile_fields' );
 
@@ -561,22 +761,41 @@ function wpaesm_save_employee_profile_fields( $user_id ) {
 }
 
 
-// ------------------------------------------------------------------------
-// CREATE CUSTOM METABOXES
-// ------------------------------------------------------------------------
-
+/**
+ * Set up WP Alchemy.
+ *
+ * Include WP Alchemy files.
+ *
+ * @since 1.0
+ *
+ * @see WPAlchemy_Metabox
+ * @link http://www.farinspace.com/wpalchemy-metabox/
+ */
 if(!class_exists('WPAlchemy_MetaBox')) {
 	include_once 'wpalchemy/MetaBox.php';
-	include_once 'wpalchemy/MediaAccess.php';
-	
-	$wpalchemy_media_access = new WPAlchemy_MediaAccess();
 }
 
-define( 'WPAESM_PATH', plugin_dir_path(__FILE__) );
+/**
+ * Define plugin path for WP Alchemy.
+ *
+ * @since 1.0
+ */
+define( 'WPAESM_PATH', plugin_dir_path( __FILE__ ) );
 
-// Add stylesheets and scripts
-function wpaesm_add_admin_styles_and_scripts($hook)
-{
+/**
+ * Enqueue styles and scripts.
+ *
+ * Enqueue admin styles and scripts.
+ *
+ * @since 1.0
+ *
+ * @global $post  Current post type.
+ *
+ * @param string  $hook  The page's hook tells us whether this page needs the style/script.
+ */
+add_action( 'admin_enqueue_scripts', 'wpaesm_add_admin_styles_and_scripts' );
+
+function wpaesm_add_admin_styles_and_scripts( $hook ) {
 	wp_enqueue_style( 'wpalchemy-metabox', plugins_url() . '/employee-scheduler/css/meta.css' );
 	global $post;  
 
@@ -590,7 +809,7 @@ function wpaesm_add_admin_styles_and_scripts($hook)
 			}
 		}
 	}
-	if ( 'employee-scheduler_page_payroll-report' == $hook || 'shift_page_add-repeating-shifts' == $hook || 'shift_page_filter-shifts' == $hook || 'expense_page_filter-expenses' == $hook || 'employee-scheduler_page_scheduled-worked' == $hook ) {
+	if ( 'employee-scheduler_page_payroll-report' == $hook || 'shift_page_add-repeating-shifts' == $hook || 'shift_page_filter-shifts' == $hook || 'expense_page_filter-expenses' == $hook || 'employee-scheduler_page_scheduled-worked' == $hook || 'shift_page_view-schedules' == $hook ) {
 		wp_enqueue_script( 'date-time-picker', plugins_url() . '/employee-scheduler/js/jquery.datetimepicker.js', 'jQuery' );
 		wp_enqueue_script( 'wpaesm_scripts', plugins_url() . '/employee-scheduler/js/wpaesmscripts.js', 'jQuery' );
 	}
@@ -598,84 +817,139 @@ function wpaesm_add_admin_styles_and_scripts($hook)
 		wp_enqueue_script( 'stupid-table', plugins_url() . '/employee-scheduler/js/stupidtable.min.js', array( 'jquery' ) );
 	}
 }
-add_action( 'admin_enqueue_scripts', 'wpaesm_add_admin_styles_and_scripts' );
 
+/**
+ * Define WP Alchemy metaboxes.
+ *
+ * @since 1.0
+ */
 // Create metabox for shifts
-$shift_metabox = new WPAlchemy_MetaBox(array
-(
-    'id' => 'shift_meta',
-    'title' => 'Shift Details',
-    'types' => array('shift'),
-    'template' => WPAESM_PATH . '/wpalchemy/shiftinfo.php',
-    'mode' => WPALCHEMY_MODE_EXTRACT,
-    'prefix' => '_wpaesm_'
-));
+$shift_metabox = new WPAlchemy_MetaBox( array
+	(
+	    'id' => 'shift_meta',
+	    'title' => 'Shift Details',
+	    'types' => array('shift'),
+	    'template' => WPAESM_PATH . '/wpalchemy/shiftinfo.php',
+	    'mode' => WPALCHEMY_MODE_EXTRACT,
+	    'prefix' => '_wpaesm_'
+	)
+);
 
 // Create metabox for expenses
-$expense_metabox = new WPAlchemy_MetaBox(array
-(
-    'id' => 'expense_meta',
-    'title' => 'Expense Details',
-    'types' => array('expense'),
-    'template' => WPAESM_PATH . '/wpalchemy/expenseinfo.php',
-    'mode' => WPALCHEMY_MODE_EXTRACT,
-    'prefix' => '_wpaesm_'
-));
+$expense_metabox = new WPAlchemy_MetaBox( array
+	(
+	    'id' => 'expense_meta',
+	    'title' => 'Expense Details',
+	    'types' => array('expense'),
+	    'template' => WPAESM_PATH . '/wpalchemy/expenseinfo.php',
+	    'mode' => WPALCHEMY_MODE_EXTRACT,
+	    'prefix' => '_wpaesm_'
+	)
+);
 
 if( function_exists( 'wpaesp_require_employee_scheduler' ) ) {
-	$shift_publish_metabox = new WPAlchemy_MetaBox(array
-	(
-	    'id' => 'shift_publish_meta',
-	    'title' => 'Related Shifts',
-	    'types' => array('shift'),
-	    'template' => WPAESP_PATH . '/shiftpublish.php',
-	    'mode' => WPALCHEMY_MODE_EXTRACT,
-	    'prefix' => '_wpaesm_',
-	    'context' => 'side',
-	    'priority' => 'high'
-	));
+	$shift_publish_metabox = new WPAlchemy_MetaBox( array
+		(
+		    'id' => 'shift_publish_meta',
+		    'title' => 'Related Shifts',
+		    'types' => array('shift'),
+		    'template' => WPAESP_PATH . '/shiftpublish.php',
+		    'mode' => WPALCHEMY_MODE_EXTRACT,
+		    'prefix' => '_wpaesm_',
+		    'context' => 'side',
+		    'priority' => 'high'
+		)
+	);
 }
 
-
-// ------------------------------------------------------------------------
-// ADD FIELDS TO TAXONOMIES
-// http://en.bainternet.info/wordpress-taxonomies-extra-fields-the-easy-way/
-// ------------------------------------------------------------------------
+/**
+ * Add custom fields to taxonomies.
+ *
+ * Add custom field to shift status so that schedule can display different colors for different statuses.
+ *
+ * @since 1.0
+ *
+ * @see Tax_Meta_Class
+ * @link http://en.bainternet.info/wordpress-taxonomies-extra-fields-the-easy-way/
+ *
+ */
 
 //include the main class file
-require_once("Tax-meta-class/Tax-meta-class.php");
+require_once( "Tax-meta-class/Tax-meta-class.php" );
 
 /*
 * configure taxonomy custom fields
 */
-$config = array(
+$status_config = array(
    'id' => 'status_meta_box',
    'title' => 'Shift Status Details',
-   'pages' => array('shift_status'),
+   'pages' => array( 'shift_status' ),
    'context' => 'normal',
    'fields' => array(),
    'local_images' => false,
    'use_with_theme' => false
 );
 
-$status_meta = new Tax_Meta_Class($config);
+$status_meta = new Tax_Meta_Class( $status_config );
 
-$status_meta->addColor('status_color',array('name'=> 'Shift Status Color '));
+$status_meta->addColor( 'status_color',array( 'name'=> 'Shift Status Color ' ) );
 
 $status_meta->Finish();
 
+$loc_config = array(
+   'id' => 'location_meta_box',
+   'title' => 'Location Details',
+   'pages' => array( 'location' ),
+   'context' => 'normal',
+   'fields' => array(),
+   'local_images' => false,
+   'use_with_theme' => false
+);
 
-// ------------------------------------------------------------------------
-// ADD COLUMNS TO SHIFTS OVERVIEW PAGE
-// ------------------------------------------------------------------------
+$loc_meta = new Tax_Meta_Class( $loc_config );
 
-function wpaesm_shift_overview_columns_headers($defaults) {
+$loc_meta->addTextarea( 'location_address', array( 'name'=> 'Address' ) );
+
+$loc_meta->Finish();
+
+
+
+/**
+ * Add columns to shift overview page.
+ *
+ * Change default columns on shift overview page to add columns for date and time.
+ *
+ * @since 1.0
+ *
+ * @param array $defaults  Default columns.
+ * @return array column list.
+ */
+function wpaesm_shift_overview_columns_headers( $defaults ) {
+
     $defaults['shiftdate'] = 'Shift Date';
     $defaults['shifttime'] = 'Scheduled Time';
     return $defaults;
+
 }
-function wpaesm_shift_overview_columns($column_name, $post_ID) {
+
+/**
+ * Populate shift overview columns.
+ *
+ * Add date and time to shift overview columns.
+ *
+ * @since 1.0
+ *
+ * @global object  $shift_metabox.
+ *
+ * @param string  Column name.
+ * @param int  Post ID.
+ */
+add_filter('manage_shift_posts_columns', 'wpaesm_shift_overview_columns_headers', 10);
+add_action('manage_shift_posts_custom_column', 'wpaesm_shift_overview_columns', 10, 2);
+
+function wpaesm_shift_overview_columns( $column_name, $post_ID ) {
 	global $shift_metabox;
+
 	$meta = $shift_metabox->the_meta();
     if ($column_name == 'shiftdate' && isset($meta['date'])) {
         echo $meta['date'];
@@ -685,14 +959,15 @@ function wpaesm_shift_overview_columns($column_name, $post_ID) {
     }    
 }
 
-add_filter('manage_shift_posts_columns', 'wpaesm_shift_overview_columns_headers', 10);
-add_action('manage_shift_posts_custom_column', 'wpaesm_shift_overview_columns', 10, 2);
-
-
-// ------------------------------------------------------------------------
-// CONNECT SHIFTS TO JOBS AND EMPLOYEES
-// https://github.com/scribu/wp-posts-to-posts/blob/master/posts-to-posts.php
-// ------------------------------------------------------------------------
+/**
+ * Check for WPP2P.
+ *
+ * Check whether the WP Posts 2 Posts functionality is already running on the site, and if not, load WPP2P and define constants.
+ *
+ * @since 1.0
+ *
+ */
+add_action( 'admin_init', 'wpaesm_p2p_check' );
 
 function wpaesm_p2p_check() {
 	if ( !is_plugin_active( 'posts-to-posts/posts-to-posts.php' ) ) {
@@ -707,8 +982,19 @@ function wpaesm_p2p_check() {
 		}
 	}
 }
-add_action( 'admin_init', 'wpaesm_p2p_check' );
 
+
+/**
+ * Load P2P.
+ *
+ * Load and initialize the classes for WP Posts to Posts.
+ *
+ * @since 1.0
+ *
+ * @see P2P_Autoload
+ * @link https://github.com/scribu/wp-posts-to-posts/blob/master/posts-to-posts.php
+ *
+ */
 function wpaesm_p2p_load() {
 	if ( !class_exists( 'P2P_Autoload' ) ) {
 		//load_plugin_textdomain( P2P_TEXTDOMAIN, '', basename( dirname( __FILE__ ) ) . '/languages' );
@@ -727,6 +1013,17 @@ function wpaesm_p2p_load() {
 	}
 }
 
+/**
+ * Load WPP2P Admin.
+ *
+ * Load and initialize the classes for WP Posts to Posts.
+ *
+ * @since 1.0
+ *
+ * @see P2P_Autoload
+ * @link https://github.com/scribu/wp-posts-to-posts/blob/master/posts-to-posts.php
+ *
+ */
 function wpaesm_load_admin() {
 	P2P_Autoload::register( 'P2P_', dirname( __FILE__ ) . '/wpp2p/admin' );
 
@@ -737,6 +1034,17 @@ function wpaesm_load_admin() {
 	new P2P_Tools_Page;
 }
 
+/**
+ * Initialize WPP2P.
+ *
+ * Load and initialize WP Posts to Posts.
+ *
+ * @since 1.0
+ *
+ * @see P2P_Autoload
+ * @link https://github.com/scribu/wp-posts-to-posts/blob/master/posts-to-posts.php
+ *
+ */
 function wpaesm_p2p_init() {
 	// Safe hook for calling p2p_register_connection_type()
 	do_action( 'p2p_init' );
@@ -745,6 +1053,19 @@ function wpaesm_p2p_init() {
 require dirname( __FILE__ ) . '/wpp2p/scb/load.php';
 scb_init( 'wpaesm_p2p_load' );
 add_action( 'wp_loaded', 'wpaesm_p2p_init' );
+
+/**
+ * Create connections.
+ *
+ * Use WPP2P to create connections between shifts, jobs, expenses, and employees.
+ *
+ * @since 1.0
+ *
+ * @see WPP2P
+ * @link https://github.com/scribu/wp-posts-to-posts/blob/master/posts-to-posts.php
+ *
+ */
+add_action( 'p2p_init', 'wpaesm_create_connections' );
 
 function wpaesm_create_connections() {
     // create the connection between shifts and employees (users)
@@ -805,15 +1126,25 @@ function wpaesm_create_connections() {
         ),
     ) );
 }
-add_action( 'p2p_init', 'wpaesm_create_connections' );
 
 
-// ------------------------------------------------------------------------
-// SEND NOTIFICATION WHEN SHIFT IS CREATED - http://codex.wordpress.org/Plugin_API/Action_Reference/save_post
-// ------------------------------------------------------------------------
+/**
+ * Find the last priority.
+ *
+ * The wpaesm_notify_employee function needs to run very last on save, so we need to find what priority will make it run last.
+ *
+ * @since 1.0
+ *
+ * @see wpaesm_notify_employee()
+ * @link http://wordpress.stackexchange.com/questions/116221/how-to-force-function-to-run-as-the-last-one-when-saving-the-post
+ *
+ * @param string @filter  
+ * @return int Priority that will run last.
+ */
+add_action( 'save_post', 'wpaesm_run_that_action_last', 0 ); 
 
-function wpaesm_get_latest_priority( $filter ) // figure out what priority the notify employee function needs, thanks to http://wordpress.stackexchange.com/questions/116221/how-to-force-function-to-run-as-the-last-one-when-saving-the-post
-{
+function wpaesm_get_latest_priority( $filter ) { 
+
     if ( empty ( $GLOBALS['wp_filter'][ $filter ] ) )
         return PHP_INT_MAX;
 
@@ -825,8 +1156,19 @@ function wpaesm_get_latest_priority( $filter ) // figure out what priority the n
 
     return "$last-z";
 }
-add_action( 'save_post', 'wpaesm_run_that_action_last', 0 ); 
 
+/**
+ * Notify employee that shift has been created/updated.
+ *
+ * Admin can choose to have an email sent to the employee assigned to a shift when the shift is created or edited.
+ *
+ * @since 1.0
+ *
+ * @see wpaesm_send_notification_email()
+ * @global shift_metabox WP Alchemy metabox containing shift metadata
+ *
+ * @param int  $post_id  The ID of the post the employee needs to be notified about.
+ */
 function wpaesm_notify_employee( $post_id ) {
 	if( is_admin() && 'trash' !== get_post_status( $post_id ) ) { // we only need to run this function if we're in the dashboard
 		$options = get_option('wpaesm_options'); // get options
@@ -883,7 +1225,16 @@ function wpaesm_notify_employee( $post_id ) {
 	}
 }
 
-function wpaesm_run_that_action_last() {  // add the notification action now, with lowest priority so it runs after meta data has been saved
+/**
+ * Send notification after shift is saved.
+ *
+ * Add the notification action now, with lowest priority so it runs after meta data has been saved.
+ *
+ * @since 1.0
+ *
+ * @see wpaesm_get_latest_priority()
+ */
+function wpaesm_run_that_action_last() {  
     add_action( 
         'save_post', 
         'wpaesm_notify_employee',
@@ -893,7 +1244,25 @@ function wpaesm_run_that_action_last() {  // add the notification action now, wi
 
 }
 
-function wpaesm_send_notification_email( $employeeid, $jobname, $date, $starttime, $endtime, $repeatdays, $repeatuntil, $postid ) {
+/**
+ * Send employee notification.
+ *
+ * Send the email to the employee when the shift is saved.
+ *
+ * @since 1.0
+ *
+ * @see wpaesm_send_email()
+ *
+ * @param int  $employeeid  ID of the employee who will receive notification.
+ * @param string  $clientname  Name of the job associated with the shift.
+ * @param string  $date  The date of the shift (Y-m-d).
+ * @param string  $starttime  The time the shift starts. 
+ * @param string  $endtime  The time the shift ends.
+ * @param string  $repetadays  The days of the week when the shift repeats.
+ * @param string  $repeatuntil  The date the shift stops repeating.
+ * @param int  $postid  The ID of the shift.
+ */
+function wpaesm_send_notification_email( $employeeid, $clientname, $date, $starttime, $endtime, $repeatdays, $repeatuntil, $postid ) {
 	$employeeinfo = get_user_by( 'id', $employeeid );
 	$employeeemail = $employeeinfo->user_email;	
 	$options = get_option('wpaesm_options');
@@ -902,30 +1271,32 @@ function wpaesm_send_notification_email( $employeeid, $jobname, $date, $starttim
 
 	$subject = $options['notification_subject'];
 
-	$message = __( 'You have been scheduled to work the following shift: ', 'wpaesm' ) . "\n\n";
+	$message = '<p>' . __( 'You have been scheduled to work the following shift: ', 'wpaesm' ) . '</p>';
 	if( isset( $date ) && '' !== $date ) {
-		$message .= __( 'Date: ', 'wpaesm' ) . $date . "\n";
+		$message .= '<p><strong>' . __( 'Date: ', 'wpaesm' ) . '</strong>' . $date . '</p>';
 	}
 	if( isset( $starttime ) && '' !== $starttime && isset( $endtime ) && '' !== $endtime ) {
-		$message .= __( 'Time: ', 'wpaesm' ) . $starttime . " - " . $endtime . "\n";
+		$message .= '<p><strong>' . __( 'Time: ', 'wpaesm' ) . '</strong>' . $starttime . " - " . $endtime . '</p>';
 	}
-	if( isset( $jobname ) && '' !== $jobname ) {
-		$message .= __( 'Doing the job: ', 'wpaesm' ) . $jobname . "\n";
+	if( isset( $clientname ) && '' !== $clientname ) {
+		$message .= '<p><strong>' . __( 'With the client: ', 'wpaesm' ) . '</strong>' . $clientname . '</p>';
 	}
 	if( isset( $repeatdays ) && '' !== $repeatdays ) {
-		$message .= __( 'This shift repeats every ', 'wpaesm' );
+		$message .= '<p>' . __( 'This shift repeats every ', 'wpaesm' );
 		$message .= implode(', ', $repeatdays);
 		$message .= __( ' until ', 'wpaesm' );
-		$message .= $repeatuntil;
+		$message .= $repeatuntil . '</p>';
 	}
-	$content = wp_strip_all_tags( get_post_field( 'post_content', $postid ) );
+	$content = get_post_field( 'post_content', $postid );
 	if( isset( $content ) && !empty( $content ) ) {
-		$message .= __( 'Shift Details: ', 'wpaesm' ) . "\n\n" . $content;
+		$message .= '<strong>' . __( 'Shift Details: ', 'wpaesm' ) . '</strong><br />' . $content;
 	}
 
-	$headers = "From: " . $options['notification_from_name'] . "<" . $options['notification_from_email'] . ">";
+	$message .= '<p><strong>' . __( 'View this shift online:', 'wpaesm' ) . '&nbsp;<a href="' . get_the_permalink( $postid ) . '">' . get_the_permalink( $postid ) . '</a>';
 
-	wp_mail( $to, $subject, $message, $headers );
+	$from = $options['notification_from_name'] . "<" . $options['notification_from_email'] . ">";
+
+	wpaesm_send_email( $from, $to, '', $subject, $message );
 }
 
 ?>

@@ -1,8 +1,25 @@
 <?php
+/**
+ * Public Views
+ *
+ * Contains filters and shortcodes for front-end views.
+ *
+ * @package WordPress
+ * @subpackage Employee Scheduler
+ * @since 1.0
+ */
 
-// ------------------------------------------------------------------------
-// SINGLE SHIFT VIEW
-// ------------------------------------------------------------------------
+if ( ! defined( 'ABSPATH' ) ) exit;
+
+/**
+ * Single Shift Title.
+ *
+ * Change the title on the single shift view to "Shift Details.""
+ *
+ * @since 1.0
+ *
+ * @param type  $title  The post title.
+ */
 
 function wpaesm_single_shift_title( $title ) {
 	global $post;
@@ -13,7 +30,14 @@ function wpaesm_single_shift_title( $title ) {
 }
 add_filter( 'the_title', 'wpaesm_single_shift_title', 10, 2 );
 
-// if we are recording the location of clock-in and clock-out, we need to load some JavaScript
+/**
+ * Enqueue geolocation.
+ *
+ * Check options to see if we need to record geolocation, and if so, enqueue geolocation script on singular shift view.
+ *
+ * @since 1.0
+ *
+ */
 $options = get_option('wpaesm_options');
 if( isset( $options['geolocation'] ) && $options['geolocation'] == 1 ) {
 	add_action('wp_enqueue_scripts', 'wpaesm_geolocation_script', 11);
@@ -25,15 +49,35 @@ function wpaesm_geolocation_script() {
     }
 }
 
-// Enqueue stylesheet for single shift view
+/**
+ * Single shift stylesheet.
+ *
+ * Enqueue stylesheet on single shift view.
+ *
+ * @since 1.0
+ */
+add_action( 'wp_enqueue_scripts', 'wpaesm_single_shift_css' );
+
 function wpaesm_single_shift_css() {
 	if( is_singular( 'shift' ) ) {
 		wp_enqueue_style( 'wpaesm-style', plugin_dir_url(__FILE__) . 'css/employee-scheduler.css' );
 	}
 }
 
-add_action( 'wp_enqueue_scripts', 'wpaesm_single_shift_css' );
-
+/**
+ * Single shift view.
+ *
+ * Filter single shift content to display extra information.
+ *
+ * @since 1.0
+ *
+ * @global object  $post  The post object.
+ * @global object  $shift_metabox  The shift metabox from WP Alchemy
+ *
+ * @param string  $content  The post content.
+ * @return string  The post content, along with shift information.
+ */
+add_filter( 'the_content', 'wpaesm_single_shift_view' );
 
 function wpaesm_single_shift_view( $content ) {
 	if( is_singular( 'shift' ) && is_main_query() ) {
@@ -48,6 +92,9 @@ function wpaesm_single_shift_view( $content ) {
 			foreach( $users as $user ) {
 				$employee = $user->display_name;
 				$employeeid = $user->ID;
+			}
+			if( !isset( $employeeid ) ) {
+				$employeeid = 'Unassigned';
 			}
 
 			// Process forms, if we need to
@@ -106,6 +153,15 @@ function wpaesm_single_shift_view( $content ) {
 			foreach($statuslist as $status) {
 				$statuses .= $status->name;
 			}
+			$locationlist =  wp_get_post_terms( $post->ID, 'location' );
+			$locations = '';
+			foreach( $locationlist as $location ) {
+				$locations .= $location->name;
+				$address = get_tax_meta( $location->term_id, 'location_address');
+				if( isset( $address ) && '' !== $address ) {
+					$locations .= '<br />' . nl2br( $address ) . '<br />';
+				}
+			}
 
 
 
@@ -126,8 +182,6 @@ function wpaesm_single_shift_view( $content ) {
 						$shiftcontent .= "<input type='hidden' id='latitude' name='latitude' value=''>";
 						$shiftcontent .= "<input type='hidden' id='longitude' name='longitude' value=''>";
 					}
-					// SCC uses this action to ask if employees took a break
-					do_action( 'wpaesm_add_extra_clockout_fields' );
 					$shiftcontent .= "<p>" . __( 'You clocked in at', 'wpaesm') . "&nbsp;" . $meta['clockin'] . "</p>";
 					$shiftcontent .= "<input name='wpaesm_clockout_nonce' id='wpaesm_clockout_nonce' type='hidden' value='" . wp_create_nonce( 'wpaesm_clockout_nonce' ) . "'>";
 					$shiftcontent .= "<input type='submit' value='" . __('Clock Out', 'wpaesm') . "' id='clock-out'>";
@@ -162,10 +216,15 @@ function wpaesm_single_shift_view( $content ) {
 			if( isset( $clockin ) ) {
 				$shiftcontent .= "<p><strong>Hours Worked: </strong>" . $clockin . " to " . $clockout . "</p>";
 			}
-			if( $types != '' ) {
+			if( !empty( $locations ) ) {
+				$shiftcontent .= "<p><strong>" . __('Location: ', 'wpaesm') . "</strong> " . $locations . "</p>";
+			}
+			if( '' !== $types ) {
 				$shiftcontent .= "<p><strong>" . __('Shift Type: ', 'wpaesm') . "</strong> " . $types . "</p>";
 			}
-			$shiftcontent .= "<p><strong>" . __('Shift Status: ', 'wpaesm') . "</strong> " . $statuses . "</p>";
+			if( '' !== $statuses ) {
+				$shiftcontent .= "<p><strong>" . __('Shift Status: ', 'wpaesm') . "</strong> " . $statuses . "</p>";
+			}
 			// let employee change status 
 			if( isset( $employeeid ) && $employeeid == $current_user->ID ) {
 				$shiftcontent .= "<form method='post' action='" . get_the_permalink() . "' id='shift-status'>";
@@ -174,7 +233,7 @@ function wpaesm_single_shift_view( $content ) {
 				$shiftcontent .= "<label>" . __('Change shift status:', 'wpaesm') . "</label>";
 				$shiftcontent .= "<select name='status'><option></option>";
 				$statuses = get_terms('shift_status', 'hide_empty=0');
-				foreach($statuses as $status) {
+				foreach( $statuses as $status ) {
 					$shiftcontent .= "<option value='" . $status->term_id . "'>" . $status->name . "</option>";
 				}
 				$shiftcontent .= "</select><input type='submit' value='" . __('Update Status', 'wpaesm') . "'>";
@@ -211,9 +270,7 @@ function wpaesm_single_shift_view( $content ) {
 				$shiftcontent .= "<p class='wpaesm-edit'><a href='" . get_edit_post_link() . "'>" . __('Edit this shift', 'wpaesm') . "</a></p>";
 			}
 
-			// here's an action in case someone wants to add something to the end of the single shift view
-			do_action( 'wpaesm_end_single_shift_view', 'wpaesm' );
-
+			$shiftcontent = apply_filters( 'wpaesm_filter_single_shift_view', $shiftcontent, 10, get_the_id(), $employeeid );
 			$content .= $shiftcontent;
 		} else {
 			$shiftcontent = "<p>" . __('You must be logged in to view this page.', 'wpaesm') . "</p>";
@@ -228,13 +285,20 @@ function wpaesm_single_shift_view( $content ) {
 
 	return $content;
 }
-add_filter( 'the_content', 'wpaesm_single_shift_view' );
 
 
-// ------------------------------------------------------------------------
-// PROCESS FORMS IN SINGLE SHIFT VIEW
-// ------------------------------------------------------------------------
-
+/**
+ * Change shift status.
+ *
+ * If employee filled out the "change shift status" form, change the shift status.
+ *
+ * @since 1.0
+ *
+ * @see wpaesm_single_shift_view()
+ *
+ * @param int  $post  The ID of the shift.
+ * @param int  $employee  The ID of the employee.
+ */
 function wpaesm_change_shift_status( $post, $employee ) {
 	if ( !wp_verify_nonce( $_POST['wpaesm_shift_status_nonce'], "wpaesm_shift_status_nonce")) {
         exit( "Permission error." );
@@ -259,26 +323,38 @@ function wpaesm_change_shift_status( $post, $employee ) {
 		}
 		$subject = __( 'Shift Status Change Notification', 'wpaesm' );
 
-		$message = __( 'An employee has changed the status of their shift.  Details: ') . "\n\n";
+		$message = '<p>' . __( 'An employee has changed the status of their shift.  Details: ') . '</p>';
 		if( isset( $employee ) ) {
-			$message .= __( 'Employee: ', 'wpaesm' ) . $employee . "\n";
+			$message .= '<p><strong>' . __( 'Employee: ', 'wpaesm' ) . '</strong>' . $employee . '</p>';
 		}
 		if( isset( $old_status ) ) {
-			$message .= __( 'Old Status: ', 'wpaesm' ) . $old_status . "\n";
+			$message .= '<p><strong>' . __( 'Old Status: ', 'wpaesm' ) . '</strong>' . $old_status . '</p>';
 		}
 		$newstatus = get_term_by( 'id', $_POST['status'], 'shift_status' );
-		$message .= __( 'New Status: ', 'wpaesm' ) . $newstatus->name . "\n\n";
+		$message .= '<p><strong>' . __( 'New Status: ', 'wpaesm' ) . '</strong>' . $newstatus->name . '</p>';
 		
-		$message .= __( 'View shift: ', 'wpaesm' ) . get_the_permalink( $post->ID ) . "\n";
-		$message .= __( 'Edit shift: ', 'wpaesm' ) . get_edit_post_link( $post ->ID ) . "\n";
+		$message .= '<p><strong>' . __( 'View shift: ', 'wpaesm' ) . '</strong><a href="' . get_the_permalink( $post->ID ) . '">' . get_the_permalink( $post->ID ) . '</a></p>';
+		$message .= '<p><strong>' . __( 'Edit shift: ', 'wpaesm' ) . '</strong><a href="' . get_edit_post_link( $post ->ID ) . '">' . get_edit_post_link( $post ->ID ) . '</a></p>';
 
-		$headers = "From: " . $options['notification_from_name'] . "<" . $options['notification_from_email'] . ">";
-		wp_mail( $to, $subject, $message, $headers );
+		$from = $options['notification_from_name'] . "<" . $options['notification_from_email'] . ">";
+		wpaesm_send_email( $from, $to, '', $subject, $message );
 	}
 
 	unset($_POST);
 }
 
+/**
+ * Save employee note.
+ *
+ * If employee filled out the "leave shift note" form, save the data.
+ *
+ * @since 1.0
+ *
+ * @see wpaesm_single_shift_view()
+ *
+ * @param int  $post  ID of the shift.
+ * @param int  $employee  ID of the employee.
+ */
 function wpaesm_save_employee_note( $post, $employee ) {
 	if ( !wp_verify_nonce( $_POST['wpaesm_employee_note_nonce'], "wpaesm_employee_note_nonce")) {
         exit( "Permission error." );
@@ -313,15 +389,26 @@ function wpaesm_save_employee_note( $post, $employee ) {
 			$to = get_bloginfo('admin_email');
 		}
 		$subject = $employee . " left a note on their shift on " . $meta['date'];
-		$message = $employee . " left the following note on their shift that is scheduled for " . $meta['date'] . ":\n";
+		$message = '<p>' . $employee . " left the following note on their shift that is scheduled for " . $meta['date'] . ':</p>';
 		$message .= $_POST['note'];
-		$headers = "From: " . $options['notification_from_name'] . "<" . $options['notification_from_email'] . ">";
-		wp_mail( $to, $subject, $message, $headers );
+		$from = $options['notification_from_name'] . "<" . $options['notification_from_email'] . ">";
+		wpaesm_send_email( $from, $to, '', $subject, $message );
 	}
 
 	unset($_POST);
 }
 
+/**
+ * Clock in.
+ *
+ * If employee pushed the "clock in" button, save their clock in time.
+ *
+ * @since 1.0
+ *
+ * @see wpaesm_single_shift_view()
+ *
+ * @param int  $post  The shift ID.
+ */
 function wpaesm_clock_in( $post ) {
 	if ( !wp_verify_nonce( $_POST['wpaesm_clockin_nonce'], "wpaesm_clockin_nonce")) {
         exit( "Permission error." );
@@ -333,6 +420,13 @@ function wpaesm_clock_in( $post ) {
 	// save clock in time
 	$clockin = current_time("H:i");
 	update_post_meta( $post->ID, '_wpaesm_clockin', $clockin );
+
+	$testing_meta = get_post_meta( $post->ID, '_wpaesm_clockin', true );
+	if( !isset( $testing_meta ) || '' == $testing_meta ) {
+		wp_die( __( 'Something has gone wrong.  Please use the back button to try to clock in again.  If you continue to receive this error, contact the site administrator.', 'wpaesm' ) );
+	}
+
+
 	// save address
 	if(isset($_POST['latitude']) && isset($_POST['longitude'])) {
 		$lat = $_POST['latitude'];
@@ -351,6 +445,17 @@ function wpaesm_clock_in( $post ) {
 	unset($_POST);
 }
 
+/**
+ * Clock out.
+ *
+ * If employee clicked the "clock out" button, record the time and mark the shift as worked.
+ *
+ * @since 1.0
+ *
+ * @see wpaesm_single_shift_view()
+ *
+ * @param int  $post  ID of the shift.
+ */
 function wpaesm_clock_out( $post ) {
 	if ( !wp_verify_nonce( $_POST['wpaesm_clockout_nonce'], "wpaesm_clockout_nonce")) {
         exit( "Permission error." );
@@ -362,6 +467,13 @@ function wpaesm_clock_out( $post ) {
 	// save clock out time
 	$clockout = current_time("H:i");
 	update_post_meta( $post->ID, '_wpaesm_clockout', $clockout );
+
+	$testing_meta = get_post_meta( $post->ID, '_wpaesm_clockout', true );
+	if( !isset( $testing_meta ) || '' == $testing_meta ) {
+		wp_die( __( 'Something has gone wrong.  Please use the back button to try to clock in again.  If you continue to receive this error, contact the site administrator.', 'wpaesm' ) );
+	}
+
+	
 	// save address
 	if(isset($_POST['latitude']) && isset($_POST['longitude'])) {
 		$lat = $_POST['latitude'];
@@ -384,11 +496,30 @@ function wpaesm_clock_out( $post ) {
 	unset($_POST);
 }
 
-// ------------------------------------------------------------------------
-// MASTER SCHEDULE SHORTCODE
-// ------------------------------------------------------------------------
+/**
+ * Master Schedule Shortcode.
+ *
+ * [master_schedule] displays a weekly work schedule with all employees' shifts.
+ *
+ * @since 1.0
+ *
+ * @param array $args {
+ *     Shortcode attributes
+ *
+ *     @param string $begin Begin date for the schedule, in format Y-m-d.
+ *     @param string $end End date for the schedule, in format Y-m-d.
+ * }
+ * @return string  HTML for master schedule.
+ */
+function wpaesm_master_schedule_shortcode( $atts ) {
 
-function wpaesm_master_schedule_shortcode() {
+	// Attributes
+	extract( shortcode_atts(
+		array(
+			'begin' => '',
+			'end' => '',
+		), $atts )
+	);
 
 	// Enqueue script to make table sortable
 	wp_enqueue_script( 'stupid-table', plugin_dir_url(__FILE__) . 'js/stupidtable.min.js', array( 'jquery' ) );
@@ -398,49 +529,69 @@ function wpaesm_master_schedule_shortcode() {
 
 	// must be logged in as administrator or employee to view this
 	if( is_user_logged_in() && ( wpaesm_check_user_role('employee') || wpaesm_check_user_role('administrator') ) ) {
-		// get the appropriate date
-		if( isset( $_GET['week'] ) ) {
-			$thisweek = $_GET['week'];
-			$nextweek = strtotime("+1 week", $thisweek);
-			$lastweek = strtotime("-1 week", $thisweek);
-		} else {
-			$thisweek = current_time("timestamp");
-			$nextweek = strtotime("+1 week");
-			$lastweek = strtotime("-1 week");
-		}
 		
-		$options = get_option('wpaesm_options');
-
-		// get the range of dates for this week
-
-		// find out what day of the week today is
-		$today = date("l", $thisweek);
-
-		if($today == $options['week_starts_on']) { // today is first day of the week
-			$weekstart = $thisweek;
-		} else { // find the most recent first day of the week
-			$sunday = 'last ' . $options['week_starts_on'];
-			$weekstart = strtotime($sunday, $thisweek);
-		}
-
-		// from the first day of the week, add one day 7 times to get all the days of the week
-		$i = 0;
-		while($i < 7) {
-			$week[date("Y-m-d", strtotime('+ ' . $i . 'days', $weekstart))] = array();
-			if($i == 0) {
-				$schedulebegin = date('F j, Y', strtotime('+ ' . $i . 'days', $weekstart));
-			} elseif ($i == 6) {
-				$scheduleend = date('F j, Y', strtotime('+ ' . $i . 'days', $weekstart));
+		// see if we have shortcode attributes
+		if( '' !== $begin && '' !== $end ) {
+			$nav = 'off';
+			$schedulebegin = $begin;
+			$scheduleend = $end;
+			$i = 0;
+			$thisday = strtotime( $begin );
+			$lastday = strtotime( $end );
+			while( $thisday <= $lastday ) {
+				$thisday = strtotime( '+ ' . $i . 'days', $thisday );
+				$week[date( "Y-m-d", $thisday )] = array();
+				$i++;
 			}
-			$i++;
+
+		} else {
+			$nav = 'on';
+			// we don't have shortcode attributes, so we'll use default dates
+			// get the appropriate date
+			if( isset( $_GET['week'] ) ) {
+				$thisweek = $_GET['week'];
+				$nextweek = strtotime("+1 week", $thisweek);
+				$lastweek = strtotime("-1 week", $thisweek);
+			} else {
+				$thisweek = current_time("timestamp");
+				$nextweek = strtotime("+1 week");
+				$lastweek = strtotime("-1 week");
+			}
+			
+			$options = get_option('wpaesm_options');
+
+			// get the range of dates for this week
+
+			// find out what day of the week today is
+			$today = date("l", $thisweek);
+
+			if($today == $options['week_starts_on']) { // today is first day of the week
+				$weekstart = $thisweek;
+			} else { // find the most recent first day of the week
+				$sunday = 'last ' . $options['week_starts_on'];
+				$weekstart = strtotime($sunday, $thisweek);
+			}
+
+			// from the first day of the week, add one day 7 times to get all the days of the week
+			$i = 0;
+			while($i < 7) {
+				$week[date("Y-m-d", strtotime('+ ' . $i . 'days', $weekstart))] = array();
+				if($i == 0) {
+					$schedulebegin = date('F j, Y', strtotime('+ ' . $i . 'days', $weekstart));
+				} elseif ($i == 6) {
+					$scheduleend = date('F j, Y', strtotime('+ ' . $i . 'days', $weekstart));
+				}
+				$i++;
+			}
 		}
 
 		$mschedule = "<h3>" . sprintf( __( 'Schedule for %s through %s', 'wpaesm' ), $schedulebegin, $scheduleend ) . "</h3>";
-		do_action( 'wpaesm_begin_master_schedule' );
-		$mschedule .= "<nav class='wpaesm-schedule'><ul><li class='wpaesm-previous'><a href='" . get_the_permalink() . "?week=" . $lastweek . "'>" . __( 'Previous Week', 'wpaesm' ) . "</a></li>";
-		$mschedule .= "<li class='wpaesm-this'><a href='" . get_the_permalink() . "'>" . __( 'This Week', 'wpaesm' ) . "</a></li>";
-		$mschedule .= "<li class='wpaesm-next'><a href='" . get_the_permalink() . "?week=" . $nextweek . "'>" . __( 'Next Week', 'wpaesm' ) . "</a></li></ul></nav>";
-		
+		if( 'on' == $nav ) {
+			$mschedule .= "<nav class='schedule'><ul><li class='previous'><a href='" . get_the_permalink() . "?week=" . $lastweek . "'>" . __( 'Previous Week', 'wpaesm' ) . "</a></li>";
+			$mschedule .= "<li class='this'><a href='" . get_the_permalink() . "'>" . __( 'This Week', 'wpaesm' ) . "</a></li>";
+			$mschedule .= "<li class='next'><a href='" . get_the_permalink() . "?week=" . $nextweek . "'>" . __( 'Next Week', 'wpaesm' ) . "</a></li></ul></nav>";
+		}
+
 		// collect all the shifts
 		foreach($week as $day => $shifts) {
 			$args = array( 
@@ -491,8 +642,12 @@ function wpaesm_master_schedule_shortcode() {
 						'connected_items' => $id,
 						'orderby'      => 'display_name',
 					) );
-					foreach($users as $user) {
-						$week[$day][$i]['employee'] = $user->id;
+					if( empty( $users ) ) {
+						$week[$day][$i]['employee'] = __( 'Unassigned', 'wpaesm' );
+					} else {
+						foreach($users as $user) {
+							$week[$day][$i]['employee'] = $user->id;
+						}
 					}
 					$jobs = get_posts( array(
 					  'connected_type' => 'shifts_to_jobs',
@@ -500,9 +655,14 @@ function wpaesm_master_schedule_shortcode() {
 					  'nopaging' => true,
 					  'suppress_filters' => false
 					) );
-					foreach($jobs as $job) {
-						$week[$day][$i]['job'] = $job->post_title;
-						$week[$day][$i]['joblink'] = site_url() . "/job/" . $job->post_name;
+					if( empty( $jobs ) ) {
+						$week[$day][$i]['job'] = __( 'No job assigned', 'wpaesm' );
+						$week[$day][$i]['joblink'] = '#';
+					} else {
+						foreach($jobs as $job) {
+							$week[$day][$i]['job'] = $job->post_title;
+							$week[$day][$i]['joblink'] = site_url() . "/job/" . $job->post_name;
+						}
 					}
 					$i++;
 				endwhile;
@@ -510,7 +670,7 @@ function wpaesm_master_schedule_shortcode() {
 			wp_reset_postdata();
 
 		}
-
+		
 		// go through the shifts and collect all the employees
 		$employeearray = array();
 		foreach( $week as $day => $shifts ) {
@@ -525,21 +685,38 @@ function wpaesm_master_schedule_shortcode() {
 		$employeearray = array_unique( $employeearray );
 
 		// display table
-		$mschedule .= "<table id='wpaesm-master-schedule'><thead><tr>";
-		$mschedule .= "<th data-sort='string'><span>Employee</span></th>";
+		if( 'off' == $nav ) {
+			$class = 'class="wp-list-table widefat fixed posts striped"';
+		} else {
+			$class = '';
+		}
+		$mschedule .= "<table id='master-schedule'" . $class . "><thead><tr>";
+		$mschedule .= "<th data-sort='string'><span>" . __( 'Employee', 'wpaesm' ) . "</span></th>";
 		foreach( $week as $day => $shifts ) {
 			$mschedule .= "<th data-sort='string'><span>" . date("D M j", strtotime($day)) . "</span></th>";
 		}
 		$mschedule .= "</tr></thead><tbody>";
 		foreach( $employeearray as $employee ) {
-			$employeeinfo = get_user_by('id', $employee);
-			$mschedule .= "<tr><th scope='row'>" . $employeeinfo->display_name . "<br /><a href='mailto:" . $employeeinfo->user_email . "'>" . $employeeinfo->user_email . "</a><br /><a href='tel:" . get_user_meta($employee, 'phone', true) . "'>" . get_user_meta($employee, 'phone', true) . "</a></th>";
+			if( 'Unassigned' == $employee ) {
+				$employee_cell = $employee;
+			} else {
+				$employeeinfo = get_user_by('id', $employee);
+				$employee_cell = $employeeinfo->display_name;
+				if( isset( $employeeinfo->user_email ) ) {
+					$employee_cell .= "<br /><a href='mailto:" . $employeeinfo->user_email . "'>" . $employeeinfo->user_email . "</a>";
+				}
+				$phone = get_user_meta($employee, 'phone', true);
+				if( isset( $phone ) ) {
+					$employee_cell .= "<br /><a href='tel:" . $phone . "'>" . $phone . "</a>";
+				}
+			}
+			$mschedule .= "<tr><th scope='row'>" . $employee_cell . "</th>";
 			foreach( $week as $day => $shifts ) {
 				$mschedule .= "<td>";
-				$shift_text='';
+				$shift_text = '';
 				foreach( $shifts as $shift ) {
 					if( isset( $shift['employee'] ) && $employee == $shift['employee'] ) {
-						$shift_text .= "<div";
+						$shift_text = "<div";
 						if( isset( $shift['status'] ) ) {
 							$shift_text .= " class='wpaesm-" . $shift['status'] . "'";
 						}
@@ -552,23 +729,28 @@ function wpaesm_master_schedule_shortcode() {
 						} else {
 							$shift_text .= get_the_title( $shift['id'] );
 						}
-						$shift_text .= "<span class='wpaesm-time'>" . date("g:i", strtotime($shift['starttime'])) . " - " . date("g:i", strtotime($shift['endtime'])) . "</span>";
-						$shift_text .= "<a class='wpaesm-details' href='" . $shift['permalink'] . "'>" . __( 'View Shift Details', 'wpaesm' ) . "</a>";
-						do_action( 'wpaesm_shift_table_cell' );
+						$shift_text .= "<br /><span class='wpaesm-time'>" . date( "g:i", strtotime( $shift['starttime'] ) ) . " - " . date( "g:i", strtotime( $shift['endtime'] ) ) . "</span>";
+						$shift_text .= "<br /><a class='wpaesm-details' href='" . $shift['permalink'] . "'>" . __( 'View Shift Details', 'wpaesm' ) . "</a>";
 						$shift_text .= "</div>";
+						$shift_text = apply_filters( 'wpaesm_single_shift_cell', $shift_text, 10, $shift['id'], $employee );
+						$mschedule .= $shift_text;
 					}
 				}
-				if( empty($shift_text) ){
+				if( empty( $shift_text ) ){
 					$mschedule .= "<span class='wpaesm-noshift'>" . __( 'No shifts', 'wpaesm' ) . "</span>";
 				}
-				$mschedule .= $shift_text;
+				
 				$mschedule .= "</td>";
 			}
 			$mschedule .= "</tr>";
 		}
 
 		$mschedule .= "</tbody></table>";
-		// TO DO create navigation links to next week
+		if( 'on' == $nav ) {
+			$mschedule .= "<nav class='schedule'><ul><li class='previous'><a href='" . get_the_permalink() . "?week=" . $lastweek . "'>" . __( 'Previous Week', 'wpaesm' ) . "</a></li>";
+			$mschedule .= "<li class='this'><a href='" . get_the_permalink() . "'>" . __( 'This Week', 'wpaesm' ) . "</a></li>";
+			$mschedule .= "<li class='next'><a href='" . get_the_permalink() . "?week=" . $nextweek . "'>" . __( 'Next Week', 'wpaesm' ) . "</a></li></ul></nav>";
+		}
 		
 	} else {
 		$mschedule = "<p>" . __( 'You must be logged in to view this page.', 'wpaesm' ) . "</p>";
@@ -582,60 +764,100 @@ function wpaesm_master_schedule_shortcode() {
 add_shortcode( 'master_schedule', 'wpaesm_master_schedule_shortcode' );
 
 
+/**
+ * Your Schedule Shortcode.
+ *
+ * [your_schedule] displays a weekly work schedule for the currently logged-in user.
+ *
+ * @since 1.0
+ *
+ * @param array $args {
+ *     Shortcode attributes
+ *
+ *     @param string $begin Begin date for the schedule, in format Y-m-d.
+ *     @param string $end End date for the schedule, in format Y-m-d.
+ *     @param int $employee The ID of the employee
+ * }
+ * @return string  HTML for your schedule.
+ */
+function wpaesm_your_schedule_shortcode( $atts ) {
 
-// ------------------------------------------------------------------------
-// YOUR SCHEDULE SHORTCODE
-// ------------------------------------------------------------------------
-
-function wpaesm_your_schedule_shortcode() {
+	// Attributes
+	extract( shortcode_atts(
+		array(
+			'employee' => '',
+			'begin' => '',
+			'end' => '',
+		), $atts )
+	);
 
 	// Enqueue style to make everything look right
 	wp_enqueue_style( 'employee-scheduler', plugin_dir_url(__FILE__) . 'css/employee-scheduler.css' );
 
 	// must be logged in to view this
 	if( is_user_logged_in() && ( wpaesm_check_user_role('employee') || wpaesm_check_user_role('administrator') ) ) {
-		// get the appropriate date
-		if(isset($_GET['week'])) {
-			$thisweek = $_GET['week'];
-			$nextweek = strtotime("+1 week", $thisweek);
-			$lastweek = strtotime("-1 week", $thisweek);
-		} else {
-			$thisweek = current_time("timestamp");
-			$nextweek = strtotime("+1 week");
-			$lastweek = strtotime("-1 week");
-		}
-		
-		$options = get_option('wpaesm_options');
-
-		// get the range of dates for this week
-
-		// find out what day of the week today is
-		$today = date("l", $thisweek);
-
-		if($today == $options['week_starts_on']) { // today is first day of the week
-			$weekstart = $thisweek;
-		} else { // find the most recent first day of the week
-			$sunday = 'last ' . $options['week_starts_on'];
-			$weekstart = strtotime($sunday, $thisweek);
-		}
-
-		// from the first day of the week, add one day 7 times to get all the days of the week
-		$i = 0;
-		while($i < 7) {
-			$week[date("Y-m-d", strtotime('+ ' . $i . 'days', $weekstart))] = array();
-			if($i == 0) {
-				$schedulebegin = date('F j, Y', strtotime('+ ' . $i . 'days', $weekstart));
-			} elseif ($i == 6) {
-				$scheduleend = date('F j, Y', strtotime('+ ' . $i . 'days', $weekstart));
+		// see if we have shortcode attributes
+		if( '' !== $employee ) {
+			$nav = 'off';
+			$schedulebegin = $begin;
+			$scheduleend = $end;
+			$i = 0;
+			$thisday = strtotime( $begin );
+			$lastday = strtotime( $end );
+			while( $thisday <= $lastday ) {
+				$thisday = strtotime( '+ ' . $i . 'days', $thisday );
+				$week[date( "Y-m-d", $thisday )] = array();
+				$i++;
 			}
-			$i++;
+
+		} else {
+			$nav = 'on';
+			$employee = get_current_user_id();
+
+			// get the appropriate date
+			if(isset($_GET['week'])) {
+				$thisweek = $_GET['week'];
+				$nextweek = strtotime("+1 week", $thisweek);
+				$lastweek = strtotime("-1 week", $thisweek);
+			} else {
+				$thisweek = current_time("timestamp");
+				$nextweek = strtotime("+1 week");
+				$lastweek = strtotime("-1 week");
+			}
+			
+			$options = get_option('wpaesm_options');
+
+			// get the range of dates for this week
+
+			// find out what day of the week today is
+			$today = date("l", $thisweek);
+
+			if($today == $options['week_starts_on']) { // today is first day of the week
+				$weekstart = $thisweek;
+			} else { // find the most recent first day of the week
+				$sunday = 'last ' . $options['week_starts_on'];
+				$weekstart = strtotime($sunday, $thisweek);
+			}
+
+			// from the first day of the week, add one day 7 times to get all the days of the week
+			$i = 0;
+			while($i < 7) {
+				$week[date("Y-m-d", strtotime('+ ' . $i . 'days', $weekstart))] = array();
+				if($i == 0) {
+					$schedulebegin = date('F j, Y', strtotime('+ ' . $i . 'days', $weekstart));
+				} elseif ($i == 6) {
+					$scheduleend = date('F j, Y', strtotime('+ ' . $i . 'days', $weekstart));
+				}
+				$i++;
+			}
 		}
 
 		$mschedule = "<h3>" . sprintf( __( 'Your Schedule for %s through %s', 'wpaesm' ), $schedulebegin, $scheduleend ) . "</h3>";
-		do_action( 'wpaesm_begin_your_schedule' );
-		$mschedule .= "<nav class='wpaesm-schedule'><ul><li class='wpaesm-previous'><a href='" . get_the_permalink() . "?week=" . $lastweek . "'>" . __( 'Previous Week', 'wpaesm' ) . "</a></li>";
-		$mschedule .= "<li class='wpaesm-this'><a href='" . get_the_permalink() . "'>" . __( 'This Week', 'wpaesm' ) . "</a></li>";
-		$mschedule .= "<li class='wpaesm-next'><a href='" . get_the_permalink() . "?week=" . $nextweek . "'>" . __( 'Next Week', 'wpaesm' ) . "</a></li></ul></nav>";
+		if( 'on' == $nav ) {
+			$mschedule .= "<nav class='schedule'><ul><li class='previous'><a href='" . get_the_permalink() . "?week=" . $lastweek . "'>" . __( 'Previous Week', 'wpaesm' ) . "</a></li>";
+			$mschedule .= "<li class='this'><a href='" . get_the_permalink() . "'>" . __( 'This Week', 'wpaesm' ) . "</a></li>";
+			$mschedule .= "<li class='next'><a href='" . get_the_permalink() . "?week=" . $nextweek . "'>" . __( 'Next Week', 'wpaesm' ) . "</a></li></ul></nav>";
+		}
 
 		// collect all the shifts
 		foreach($week as $day => $shifts) {
@@ -673,9 +895,14 @@ function wpaesm_your_schedule_shortcode() {
 					  'nopaging' => true,
 					  'suppress_filters' => false
 					) );
-					foreach($jobs as $job) {
-						$week[$day][$i]['job'] = $job->post_title;
-						$week[$day][$i]['joblink'] = site_url() . "/job/" . $job->post_name;
+					if( empty( $jobs ) ) {
+						$week[$day][$i]['job'] = __( 'No job assigned', 'wpaesm' );
+						$week[$day][$i]['joblink'] = '#';
+					} else {
+						foreach($jobs as $job) {
+							$week[$day][$i]['job'] = $job->post_title;
+							$week[$day][$i]['joblink'] = site_url() . "/job/" . $job->post_name;
+						}
 					}
 					$i++;
 				endwhile;
@@ -697,7 +924,12 @@ function wpaesm_your_schedule_shortcode() {
 		$job_array = array_unique($job_array);
 
 		// display table
-		$mschedule .= "<table id='wpaesm-your-schedule'><tr>";
+		if( 'off' == $nav ) {
+			$class = 'class="wp-list-table widefat fixed posts striped"';
+		} else {
+			$class = '';
+		}
+		$mschedule .= "<table id='your-schedule'" . $class . "><thead><tr>";
 		$mschedule .= "<th>" . __( 'Job', 'wpaesm' ) . "</th>";
 		foreach( $week as $day => $shifts ) {
 			$mschedule .= "<th>" . date("D M j", strtotime($day)) . "</th>";
@@ -711,7 +943,7 @@ function wpaesm_your_schedule_shortcode() {
 				foreach($shifts as $shift) {
 					if(isset($shift['job']) && $job == $shift['job']) {
 						$shift_text .= "<div><span class='wpaesm-employee'>" . date("g:i", strtotime($shift['starttime'])) . " - " . date("g:i", strtotime($shift['endtime'])) . "</span>";
-						$shift_text .= "<span><a class='wpaesm-details' href='" . $shift['permalink'] . "'>" . __( 'View Shift Details', 'wpaesm' ) . "</a></div>";
+						$shift_text .= "<br /><span><a class='wpaesm-details' href='" . $shift['permalink'] . "'>" . __( 'View Shift Details', 'wpaesm' ) . "</a></div>";
 					}
 				}
 				if( empty($shift_text) ){
@@ -725,7 +957,11 @@ function wpaesm_your_schedule_shortcode() {
 		}
 
 		$mschedule .= "</table>";
-		// TO DO create navigation links to next week
+		if( 'on' == $nav ) {
+			$mschedule .= "<nav class='schedule'><ul><li class='previous'><a href='" . get_the_permalink() . "?week=" . $lastweek . "'>" . __( 'Previous Week', 'wpaesm' ) . "</a></li>";
+			$mschedule .= "<li class='this'><a href='" . get_the_permalink() . "'>" . __( 'This Week', 'wpaesm' ) . "</a></li>";
+			$mschedule .= "<li class='next'><a href='" . get_the_permalink() . "?week=" . $nextweek . "'>" . __( 'Next Week', 'wpaesm' ) . "</a></li></ul></nav>";
+		}
 		
 	} else {
 		$mschedule = "<p>" . __( 'You must be logged in to view this page.', 'wpaesm' ) . "</p>";
@@ -739,19 +975,30 @@ function wpaesm_your_schedule_shortcode() {
 add_shortcode( 'your_schedule', 'wpaesm_your_schedule_shortcode' );
 
 
-// ------------------------------------------------------------------------
-// EMPLOYEE PROFILE SHORTCODE
-// ------------------------------------------------------------------------
-
-// this output buffer is here so that the redirect will work
+/**
+ * Output buffer.
+ *
+ * Add output buffer so that when an employee saves their profile, we can redirect to show them their updated profile.
+ *
+ * @since 1.3
+ *
+ * @see wpaesm_employee_profile_shortcode()
+ */
 function wpaesm_output_buffer() {
     ob_start();
 }
 add_action('init', 'wpaesm_output_buffer');
 
 
+/**
+ * Employee Profile Shortcode.
+ *
+ * [employee_profile] lets employees edit some of their profile information.
+ *
+ * @since 1.0
+ * @return string HTML to display profile form.
+ */
 function wpaesm_employee_profile_shortcode() {
-
 
 	// Enqueue style to make everything look right
 	wp_enqueue_style( 'employee-scheduler', plugin_dir_url(__FILE__) . 'css/employee-scheduler.css' );
@@ -810,8 +1057,6 @@ function wpaesm_employee_profile_shortcode() {
 		    }
 		}
 
-	
-
 	ob_start();
     include 'profile-form.php';
     return ob_get_clean();
@@ -821,10 +1066,15 @@ function wpaesm_employee_profile_shortcode() {
 add_shortcode( 'employee_profile', 'wpaesm_employee_profile_shortcode' );
 
 
-// ------------------------------------------------------------------------
-// TODAY SHORTCODE
-// ------------------------------------------------------------------------
-
+/**
+ * Today shortcode.
+ *
+ * [today] shows the currently logged-in employee the shift(s) they are scheduled to work today.
+ *
+ * @since 1.0
+ *
+ * @return string HTML to display today's shifts.
+ */
 function wpaesm_today_shortcode() {
 
 	// Enqueue style to make everything look right
@@ -898,10 +1148,15 @@ function wpaesm_today_shortcode() {
 }
 add_shortcode( 'today', 'wpaesm_today_shortcode' );
 
-// ------------------------------------------------------------------------
-// EXTRA-SHIFT WORK SHORTCODE
-// ------------------------------------------------------------------------
-
+/**
+ * Extra Work shortcode.
+ *
+ * [extra_work] shortcode displays a form where employees can record work they did that was not a scheduled shift.
+ *
+ * @since 1.0
+ *
+ * @return string HTML to display extra work form.
+ */
 function wpaesm_extra_work_shortcode() {
 
 	// enqueue scripts to make date and time pickers work
@@ -969,11 +1224,18 @@ function wpaesm_extra_work_shortcode() {
 }
 add_shortcode( 'extra_work', 'wpaesm_extra_work_shortcode' );
 
-
-// ------------------------------------------------------------------------
-// EXTRA-SHIFT WORK FUNCTIONS
-// ------------------------------------------------------------------------
-
+/**
+ * Save extra work shift.
+ *
+ * When an employee fills out the extra work form, create a shift.
+ *
+ * @since 1.0
+ *
+ * @see wpaesm_extra_work_shortcode()
+ *
+ * @param int  $viewer  ID of the employee who filled in the form.
+ * @return string  Success or failure message.
+ */
 function wpaesm_add_extra_work_shift( $viewer ) {
 	if ( !wp_verify_nonce( $_POST['wpaesm_extra_work_nonce'], "wpaesm_extra_work_nonce")) {
         exit( "Permission error." );
@@ -1002,6 +1264,8 @@ function wpaesm_add_extra_work_shift( $viewer ) {
 	add_post_meta( $extrashift, '_wpaesm_date', $_POST['thisdate'] );
 	add_post_meta( $extrashift, '_wpaesm_clockin', $_POST['starttime'] );
 	add_post_meta( $extrashift, '_wpaesm_clockout', $_POST['endtime'] );
+	add_post_meta( $extrashift, '_wpaesm_starttime', $_POST['starttime'] );
+	add_post_meta( $extrashift, '_wpaesm_endtime', $_POST['endtime'] );
 	// connect shift to employee
 	p2p_type( 'shifts_to_employees' )->connect( $extrashift, $viewer->ID, array(
 	    'date' => current_time('mysql')
@@ -1021,10 +1285,15 @@ function wpaesm_add_extra_work_shift( $viewer ) {
 	return $message;
 }
 
-// ------------------------------------------------------------------------
-// EXPENSE REPORT SHORTCODE
-// ------------------------------------------------------------------------
-
+/**
+ * Record Expense shortcode.
+ *
+ * [record_expense] displays a form where employees can record mileage and expenses.
+ *
+ * @since 1.0
+ *
+ * @return string HTML to display form.
+ */
 function wpaesm_record_expense_shortcode() {
 
 	// Enqueue style to make everything look right
@@ -1082,7 +1351,17 @@ function wpaesm_record_expense_shortcode() {
 }
 add_shortcode( 'record_expense', 'wpaesm_record_expense_shortcode' );
 
-// functions to make the expense type dropdown display hierarchically
+/**
+ * Expense category dropdown.
+ *
+ * Expense category is a hierarchical taxonomy: this displays the top-level expense categories.
+ *
+ * @since 1.0
+ *
+ * @see wpaesm_record_expense_shortcode()
+ *
+ * @return string HTML for dropdown.
+ */
 function wpaesm_expense_category_dropdown() {
 	$dropdown = '';
 
@@ -1103,6 +1382,17 @@ function wpaesm_expense_category_dropdown() {
    	return $dropdown;
 }
 
+/**
+ * Expense category dropdown: child terms.
+ *
+ * Display the children and grandchildren in the expense category dropdown.
+ *
+ * @since 1.0
+ *
+ * @see wpaesm_expense_category_dropdown()
+ * 
+ * @return string HTML for dropdown.
+ */
 function wpaesm_get_term_children( $termid, $depth ) {
 
 	$children = '';
@@ -1129,7 +1419,18 @@ function wpaesm_get_term_children( $termid, $depth ) {
 	return $children;
 }
 
-
+/**
+ * Record expense.
+ *
+ * When employee fills out the "record expense" form, save the expense.
+ *
+ * @since 1.0
+ *
+ * @see wpaesm_record_expense_shortcode()
+ *
+ * @param int  $viewer  ID of employee who filled in the form.
+ * @return string  Success or failure message.
+ */
 function wpaesm_add_expense( $viewer ) {
 	$viewername = $viewer->display_name;
 	$thisexpense = array(

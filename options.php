@@ -1,14 +1,39 @@
 <?php
-// Delete options table entries ONLY when plugin deactivated AND deleted
+/**
+ * Options
+ *
+ * Display the options page and save the options
+ *
+ * @package WordPress
+ * @subpackage Employee Scheduler
+ * @since 1.0
+ */
+
+if ( ! defined( 'ABSPATH' ) ) exit;
+
+/**
+ * Delete options.
+ *
+ * Delete options when plugin is deleted.
+ *
+ * @since 1.0
+ *
+ */
 function wpaesm_delete_plugin_options() {
-	delete_option('wpaesm_options');
+	delete_option( 'wpaesm_options' );
 }
 
-// Define default option settings
+/**
+ * Default options.
+ *
+ * Save default option values when plugin is activated.
+ *
+ * @since 1.0
+ */
 function wpaesm_add_defaults() {
-	$tmp = get_option('wpaesm_options');
-    if(!is_array($tmp)) {
-		delete_option('wpaesm_options'); // so we don't have to reset all the 'off' checkboxes too! (don't think this is needed but leave for now)
+	$tmp = get_option( 'wpaesm_options' );
+    if( !is_array( $tmp ) ) {
+		delete_option( 'wpaesm_options' ); // so we don't have to reset all the 'off' checkboxes too! (don't think this is needed but leave for now)
 		$defaultfromname = get_bloginfo('name');
 		$defaultfromemail = get_bloginfo('admin_email');
 		$arr = array(	"notification_from_name" => $defaultfromname,
@@ -21,11 +46,17 @@ function wpaesm_add_defaults() {
 						"mileage" => ".56",
 						"calculate" => "actual"
 		);
-		update_option('wpaesm_options', $arr);
+		update_option( 'wpaesm_options', $arr );
 	}
 }
 
-// Add menu page
+/**
+ * Add menu pages.
+ *
+ * Add menu pages for Employee Scheduler, subpages for instructions and viewing schedules.
+ *
+ * @since 1.0
+ */
 function wpaesm_add_options_page() {
 	add_menu_page( 
 		'Employee Scheduler', 
@@ -37,21 +68,23 @@ function wpaesm_add_options_page() {
 		87.2317 
 	);
 	add_submenu_page( '/employee-scheduler/options.php', 'Instructions', 'Instructions', 'manage_options', 'instructions', 'wpaesm_instructions' );
+	add_submenu_page( 'edit.php?post_type=shift', 'View Schedules', 'View Schedules', 'manage_options', 'view-schedules', 'wpaesm_view_schedules' );
 }
 
-// ------------------------------------------------------------------------------
-// CALLBACK FUNCTION SPECIFIED IN: add_options_page()
-// ------------------------------------------------------------------------------
-
-
-// Create Options
-function wpaesm_options_init(){
+/**
+ * Register settings.
+ *
+ * Create the settings sections and fields.
+ *
+ * @since 1.0
+ */
+function wpaesm_options_init() {
 
 	register_setting( 'wpaesm_plugin_options', 'wpaesm_options', 'wpaesm_validate_options' );
 
 	add_settings_section(
 		'wpaesm_main_section', 
-		__( 'Settings', 'wpaesm' ), 
+		__( 'Employee Scheduler Settings', 'wpaesm' ), 
 		'wpaesm_options_section_callback', 
 		'wpaesm_plugin_options'
 	);
@@ -147,6 +180,11 @@ function wpaesm_options_init(){
 
 }
 
+/**
+ * Render "Notification From Name" setting.
+ *
+ * @since 1.0
+ */
 function wpaesm_notification_from_name_render( $args ) {
 	$options = get_option( 'wpaesm_options' ); ?>
 
@@ -155,6 +193,11 @@ function wpaesm_notification_from_name_render( $args ) {
 
 <?php }
 
+/**
+ * Render "Notification Email" setting.
+ *
+ * @since 1.0
+ */
 function wpaesm_notification_from_email_render( $args ) {
 	$options = get_option( 'wpaesm_options' ); ?>
 
@@ -162,6 +205,11 @@ function wpaesm_notification_from_email_render( $args ) {
 	<br /><span class="description"><?php echo $args[0]; ?></span>
 <?php }
 
+/**
+ * Render "Notification Subject" setting.
+ *
+ * @since 1.0
+ */
 function wpaesm_notification_subject_render( $args ) {
 	$options = get_option( 'wpaesm_options' ); ?>
 
@@ -169,6 +217,11 @@ function wpaesm_notification_subject_render( $args ) {
 	<br /><span class="description"><?php echo $args[0]; ?></span>
 <?php }
 
+/**
+ * Render "Admin Notify Status" setting.
+ *
+ * @since 1.0
+ */
 function wpaesm_admin_notify_status_render( $args ) {
 	$options = get_option( 'wpaesm_options' ); ?>
 
@@ -176,6 +229,11 @@ function wpaesm_admin_notify_status_render( $args ) {
 	<br /><span class="description"><?php echo $args[0]; ?></span>
 <?php }
 
+/**
+ * Render "Admin Notify Note" setting.
+ *
+ * @since 1.0
+ */
 function wpaesm_admin_notify_note_render( $args ) {
 	$options = get_option( 'wpaesm_options' ); ?>
 
@@ -183,6 +241,11 @@ function wpaesm_admin_notify_note_render( $args ) {
 	<br /><span class="description"><?php echo $args[0]; ?></span>
 <?php }
 
+/**
+ * Render "Admin Notification Email" setting.
+ *
+ * @since 1.0
+ */
 function wpaesm_admin_notification_email_render( $args ) {
 	$options = get_option( 'wpaesm_options' ); ?>
 
@@ -190,6 +253,11 @@ function wpaesm_admin_notification_email_render( $args ) {
 	<br /><span class="description"><?php echo $args[0]; ?></span>
 <?php }
 
+/**
+ * Render "Geolocation" setting.
+ *
+ * @since 1.0
+ */
 function wpaesm_geolocation_render( $args ) {
 	$options = get_option( 'wpaesm_options' ); ?>
 
@@ -197,6 +265,11 @@ function wpaesm_geolocation_render( $args ) {
 	<br /><span class="description"><?php echo $args[0]; ?></span>
 <?php }
 
+/**
+ * Render "Week Starts On" setting.
+ *
+ * @since 1.0
+ */
 function wpaesm_week_starts_on_render( $args ) {
 	$options = get_option( 'wpaesm_options' ); ?>
 
@@ -214,12 +287,16 @@ function wpaesm_week_starts_on_render( $args ) {
 
 
 
-// Render the Plugin options form
+/**
+ * Render the plugin settings form.
+ *
+ * @since 1.0
+ */
 function wpaesm_render_options() {
 	?>
 
 	<div class="wrap">
-		<h2><?php _e( 'Employee Scheduler', 'wpaesm' ); ?></h2>
+		<h1><?php _e( 'Employee Scheduler', 'wpaesm' ); ?></h1>
 		<?php settings_errors(); ?>
 
 		<div id="main" style="width: 75%; float: left">
@@ -240,20 +317,58 @@ function wpaesm_render_options() {
 	<?php	
 }
 
+/**
+ * Settings section callback.
+ *
+ * Doesn't do anything.
+ *
+ * @since 1.0
+ */
 function wpaesm_options_section_callback() {
 
 }
 
-// Sanitize and validate input. Accepts an array, return a sanitized array.
+/**
+ * Validate options.
+ *
+ * Validate and sanitize settings before saving.
+ *
+ * @since 1.0
+ *
+ * @param array  $input  Settings entered into the form.
+ * @return array $input  Settings to be saved in the database.
+ */
 function wpaesm_validate_options($input) {
 	 // strip html from textboxes
-	$input['notification_from_name'] =  wp_filter_nohtml_kses($input['notification_from_name']); 
-	$input['notification_from_email'] =  wp_filter_nohtml_kses($input['notification_from_email']);
-	$input['notification_subject'] =  wp_filter_nohtml_kses($input['notification_subject']);
-	$input['admin_notification_email'] =  wp_filter_nohtml_kses($input['admin_notification_email']);
+	if( isset( $input['notification_from_name'] ) )
+		$input['notification_from_name'] =  wp_filter_nohtml_kses($input['notification_from_name']); 
+	if( isset( $input['notification_from_email'] ) )
+		$input['notification_from_email'] =  wp_filter_nohtml_kses($input['notification_from_email']);
+	if( isset( $input['notification_subject'] ) )
+		$input['notification_subject'] =  wp_filter_nohtml_kses($input['notification_subject']);
+	if( isset( $input['admin_notification_email'] ) )
+		$input['admin_notification_email'] =  wp_filter_nohtml_kses($input['admin_notification_email']);
+	if( isset( $input['admin_notify_status'] ) )
+		$input['admin_notify_status'] =  wp_filter_nohtml_kses($input['admin_notify_status']);
+	if( isset( $input['admin_notify_note'] ) )
+		$input['admin_notify_note'] =  wp_filter_nohtml_kses($input['admin_notify_note']);
+	if( isset( $input['geolocation'] ) )
+		$input['geolocation'] =  wp_filter_nohtml_kses($input['geolocation']);
+	if( isset( $input['week_starts_on'] ) )
+		$input['week_starts_on'] =  wp_filter_nohtml_kses($input['week_starts_on']);
+	
+	$input = apply_filters( 'wpaesm_validation_options_filter', $input );
+
 	return $input;
 }
 
+/**
+ * Display sidebar on options page.
+ *
+ * Display a sidebar that encourages users to donate or upgrade.
+ *
+ * @since 1.0
+ */
 function wpaesm_display_options_sidebar() { ?>
 	<h3><?php _e( 'Upgrade to Pro!', 'wpaesm' ); ?></h3>
 	<p><?php _e( 'Employee Scheduler Pro has more features to make it easier to manage your employees!', 'wpaesm' ); ?></p>
