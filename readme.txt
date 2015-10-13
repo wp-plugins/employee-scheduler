@@ -57,13 +57,17 @@ No - only logged in users with administrator or employee user roles can see the 
 8. Extra work form, for reporting work that is not a part of a scheduled shift
 
 == Changelog ==
-= 1.6 =
+= 1.7.0 =
+* added option to send an email to site admin whenever an employee clocks out
+* added option to require admin approval before counting extra shifts as worked
+
+= 1.6.0 =
 * error messages will display if clock in and clock out times are not recorded
 * added new admin page to view schedules
 * added location taxonomy to shifts
 * updated code documentation
 
-= 1.5 =
+= 1.5.0 =
 * when employee fills out "extra work" form, the scheduled time fields are filled in
 * make shifts show up on schedule when no job is assigned
 * make shifts show up on schedule when no employee is assigned

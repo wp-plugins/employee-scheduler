@@ -146,6 +146,17 @@ function wpaesm_options_init() {
 	);
 
 	add_settings_field(
+		'admin_notify_clockout',
+		__( 'Clockout Notification', 'wpaesm' ),
+		'wpaesm_admin_notify_clockout_render',
+		'wpaesm_plugin_options',
+		'wpaesm_main_section',
+		array( 
+			__( 'Notify admin when an employee clocks out of a shift', 'wpaesm' )
+		)
+	);
+
+	add_settings_field(
 		'admin_notification_email',
 		__( 'Admin Notification Email', 'wpaesm' ),
 		'wpaesm_admin_notification_email_render',
@@ -153,6 +164,17 @@ function wpaesm_options_init() {
 		'wpaesm_main_section',
 		array( 
 			__( 'Enter the email address that will receive email notifications about employee activities', 'wpaesm' )
+		)
+	);
+
+	add_settings_field(
+		'extra_shift_approval',
+		__( 'Require Approval for Extra Shifts', 'wpaesm' ),
+		'wpaesm_extra_shift_approval_render',
+		'wpaesm_plugin_options',
+		'wpaesm_main_section',
+		array( 
+			__( 'If this is checked, an administrator will receive an email when an employee enters an extra shift, and the administrator can choose whether or not to approve the extra shift.', 'wpaesm' )
 		)
 	);
 
@@ -242,6 +264,18 @@ function wpaesm_admin_notify_note_render( $args ) {
 <?php }
 
 /**
+ * Render "Admin Notify Clockout" setting.
+ *
+ * @since 1.7.0
+ */
+function wpaesm_admin_notify_clockout_render( $args ) {
+	$options = get_option( 'wpaesm_options' ); ?>
+
+	<label><input name="wpaesm_options[admin_notify_clockout]" type="checkbox" value="1" <?php if (isset($options['admin_notify_clockout'])) { checked('1', $options['admin_notify_clockout']); } ?> /> <?php _e( 'Turn on clockout notifications', 'wpaesm' ); ?></label>
+	<br /><span class="description"><?php echo $args[0]; ?></span>
+<?php }
+
+/**
  * Render "Admin Notification Email" setting.
  *
  * @since 1.0
@@ -251,6 +285,19 @@ function wpaesm_admin_notification_email_render( $args ) {
 
 	<input type="text" size="57" name="wpaesm_options[admin_notification_email]" value="<?php echo $options['admin_notification_email']; ?>" />
 	<br /><span class="description"><?php echo $args[0]; ?></span>
+<?php }
+
+/**
+ * Render "Extra Shift Approval" setting.
+ *
+ * @since 1.7.0
+ */
+function wpaesm_extra_shift_approval_render( $args ) {
+	$options = get_option( 'wpaesm_options' ); ?>
+
+	<label><input name="wpaesm_options[extra_shift_approval]" type="checkbox" value="1" <?php if (isset($options['extra_shift_approval'])) { checked('1', $options['extra_shift_approval']); } ?> /> <?php _e('Require approval for extra shifts', 'wpaesm'); ?></label><br />
+	<br /><span class="description"><?php echo $args[0]; ?></span>
+
 <?php }
 
 /**

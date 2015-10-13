@@ -465,7 +465,7 @@ function wpaesm_clock_out( $post ) {
 	$str = $fields;
 	update_post_meta( $post->ID, 'shift_meta_fields', $str );
 	// save clock out time
-	$clockout = current_time("H:i");
+	$clockout = current_time( "H:i" );
 	update_post_meta( $post->ID, '_wpaesm_clockout', $clockout );
 
 	$testing_meta = get_post_meta( $post->ID, '_wpaesm_clockout', true );
@@ -473,14 +473,13 @@ function wpaesm_clock_out( $post ) {
 		wp_die( __( 'Something has gone wrong.  Please use the back button to try to clock in again.  If you continue to receive this error, contact the site administrator.', 'wpaesm' ) );
 	}
 
-	
-	// save address
-	if(isset($_POST['latitude']) && isset($_POST['longitude'])) {
+	// save location
+	if( isset( $_POST['latitude'] ) && isset( $_POST['longitude'] ) ) {
 		$lat = $_POST['latitude'];
 		$long = $_POST['longitude'];
-		$json = file_get_contents("http://maps.google.com/maps/api/geocode/json?latlng=$lat,$long");
-		$json = json_decode($json, true);
-		if(is_array($json) && $json['status'] == 'OK') {
+		$json = file_get_contents( "http://maps.google.com/maps/api/geocode/json?latlng=$lat,$long" );
+		$json = json_decode( $json, true );
+		if( is_array( $json ) && $json['status'] == 'OK') {
 			$address = $json['results'][0]['formatted_address'];
 			update_post_meta( $post->ID, '_wpaesm_location_out', $address );
 		} else {
@@ -490,10 +489,36 @@ function wpaesm_clock_out( $post ) {
 	}		
 	$worked = wp_set_object_terms( $post->ID, 'worked', 'shift_status', false );
 
-	global $_POST;
-	do_action( 'wpaesm_process_extra_clockout_fields' );
+	// send email, if admin wants to receive clockout email
+	$options = get_option( 'wpaesm_options' );
+	if( '1' == $options['admin_notify_clockout'] ) {
+		$users = get_users( array(
+			'connected_type' => 'shifts_to_employees',
+			'connected_items' => $post->ID
+		) );
+		foreach( $users as $user ) {
+			$employeename = $user->display_name;
+		}
+		if( !isset( $employeename ) ) {
+			$employeename = __( 'An Employee', 'wpaesm' ); 
+		}
 
-	unset($_POST);
+		$from = $options['notification_from_name'] . " <" . $options['notification_from_email'] . ">";
+		if( isset( $options['admin_notification_email'] ) ) {
+			$to = $options['admin_notification_email'];
+		} else {
+			$to = get_bloginfo( 'admin_email' );
+		}
+		$subject = sprintf( __( '%s has just clocked out', 'wpaesm' ), $employeename ); 
+		$message = '<p>' . sprintf( __( '%s has just clocked out', 'wpaesm' ), $employeename ) . '</p>';
+		$message .= '<p><strong>' . __( 'Scheduled hours', 'wpaesm' ) . ': </strong>' . get_post_meta( $post->ID, '_wpaesm_starttime', true ) . ' - ' . get_post_meta( $post->ID, '_wpaesm_endtime', true) . '</p>';
+		$message .= '<p><strong>' . __( 'Worked hours', 'wpaesm' ) . ': </strong>' . get_post_meta( $post->ID, '_wpaesm_clockin', true ) . ' - ' . get_post_meta( $post->ID, '_wpaesm_clockout', true) . '</p>';
+		$message .= '<p><a href="' . get_the_permalink( $post->ID ) . '">' . __( 'View Shift', 'wpaesm' ) . '</a></p>';
+		$message .= '<p><a href="' . get_edit_post_link( $post->ID ) . '">' . __( 'Edit Shift', 'wpaesm' ) . '</a></p>';
+		wpaesm_send_email( $from, $to, '', $subject, $message );
+	}
+
+	unset( $_POST );
 }
 
 /**
@@ -1248,7 +1273,47 @@ function wpaesm_add_extra_work_shift( $viewer ) {
 			'post_status'   => 'publish',
 			'post_content'	=> sanitize_text_field( $_POST['description'] ),
 		);
-	$extrashift = wp_insert_post($extrawork);
+	$extrashift = wp_insert_post( $extrawork );
+
+	// check whether admins need to approve extra shifts
+	$options = get_option( 'wpaesm_options' );
+	if( '1' == $options['extra_shift_approval'] ) {
+		// mark the shift as pending approval
+		wp_set_object_terms( $extrashift, 'pending-approval', 'shift_status' );
+
+		// email notification to admin
+		$from = $options['notification_from_name'] . " <" . $options['notification_from_email'] . ">";
+		if(isset($options['admin_notification_email'])) {
+			$to = $options['admin_notification_email'];
+		} else {
+			$to = get_bloginfo('admin_email');
+		}
+		$subject = sprintf( __( 'Extra shift by %s is pending your approval', 'wpaesm' ), $viewername );
+		$message = '
+			<p>' . __( 'There is a new extra shift awaiting your approval', 'wpaesm' ) . '</p>
+			<p><strong>' . __( 'Shift details' ) . '</strong>
+				<ul>
+					<li><strong>' . __( 'Employee:', 'wpaesm' ) . '</strong> ' . $viewername . '</li>
+					<li><strong>' . __( 'Date:', 'wpaesm' ) . '</strong> ' . $_POST['thisdate'] . '</li>
+					<li><strong>' . __( 'Time:', 'wpaesm' ) . '</strong> ' . $_POST['starttime'] . '&nbsp;-&nbsp' . $_POST['endtime'] . '</li>
+					<li><strong>' . __( 'Duration:', 'wpaesm' ) . '</strong> ' . wpaesm_calculate_duration( $_POST['starttime'], $_POST['endtime'] ) . '</li>';
+					if( isset( $_POST['description'] ) && '' !== $_POST['description'] ) {
+						$message .= '
+						<li><strong>' . __( 'Description:', 'wpaesm' ) . '</strong> ' . sanitize_text_field( $_POST['description'] ) . '</li>
+						';
+					}
+				$message .=
+				'</ul>
+			</p>
+			<p><a href="' . get_the_permalink( $extrashift ) . '">' . __( 'View this shift', 'wpaesm' ) . '</a></p>
+			<p><a href="' . get_edit_post_link( $extrashift ) . '">' . __( 'Edit this shift', 'wpaesm' ) . '</a></p>
+			<p>' . __( 'To approve this shift, edit it and change the shift status to "worked."  If you do not approve this shift, edit it and change the shift status to "not approved."') . '</p>
+			<p><a href="' . admin_url( 'edit.php?shift_status=pending-approval&post_type=shift' ) . '">' . __( 'View all extra shifts awaiting approval', 'wpaesm' ) . '</a></p>';
+		wpaesm_send_email( $from, $to, '', $subject, $message, '' );
+	} else {
+		// we don't need admin approval, so mark the shift as worked
+		wp_set_object_terms( $extrashift, 'worked', 'shift_status' );
+	}
 
 	wp_set_object_terms( $extrashift, 'extra', 'shift_type' );
 	// also add subcategory, if they selected one from the drop-down

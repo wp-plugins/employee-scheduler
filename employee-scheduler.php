@@ -3,7 +3,7 @@
 Plugin Name: Employee Scheduler
 Plugin URI: http://wpalchemists.com/plugins
 Description: Manage your employees' schedules, let employees view their schedule online, generate timesheets and payroll reports
-Version: 1.6
+Version: 1.7.0
 Author: Morgan Kay
 Author URI: http://wpalchemists.com
 Text Domain: wpaesm
@@ -251,6 +251,28 @@ function wpaesm_register_tax_shift_status() {
 			'slug' => 'worked',
 		)
 	);
+
+	// if admin must approve extra shifts, then we need a "pending approval" status and a "not approved" status
+	$options = get_option( 'wpaesm_options' );
+	if( isset( $options['extra_shift_approval'] ) && '1' == $options['extra_shift_approval'] ) {
+		wp_insert_term(
+			'Pending Approval', // the term 
+			'shift_status', // the taxonomy
+			array(
+				'description'=> 'Employee has worked the shift, but it is pending admin approval',
+				'slug' => 'pending-approval',
+			)
+		);
+
+		wp_insert_term(
+			'Not Approved', // the term 
+			'shift_status', // the taxonomy
+			array(
+				'description'=> 'Employee reported an extra shift, but admin did not approve it',
+				'slug' => 'not-approved',
+			)
+		);
+	}
 
 }
 
@@ -1297,6 +1319,22 @@ function wpaesm_send_notification_email( $employeeid, $clientname, $date, $start
 	$from = $options['notification_from_name'] . "<" . $options['notification_from_email'] . ">";
 
 	wpaesm_send_email( $from, $to, '', $subject, $message );
+}
+
+/**
+ * Calculate duration between two times.
+ *
+ * @since 1.7.0
+ *
+ * @param $start  Time in HH:MM format.
+ * @param $end  Time in HH:MM format.
+ * @return string  Duration between the two times.
+ */
+function wpaesm_calculate_duration( $start, $end ) {
+	$a = new DateTime( $start );
+	$b = new DateTime( $end );
+	$sched_duration = $a->diff( $b );
+	return $sched_duration->format( "%H:%I" );
 }
 
 ?>
